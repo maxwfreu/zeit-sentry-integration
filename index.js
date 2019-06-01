@@ -33,7 +33,6 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
   // Reset state on load
   if (action === 'view') {
     page = 1;
-    selectAll = false;
   }
 
   const metadata = await zeitClient.getMetadata()
@@ -141,23 +140,22 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
     }
   }
 
-  if (action === 'select-all') {
-    selectAll = true;
-  }
-
-
   let isMissingSettings = (
     !metadata.linkedApplications[projectId].envAuthToken ||
     !metadata.linkedApplications[projectId].organizationSlug ||
     !metadata.linkedApplications[projectId].projectSlug
   );
 
+  if (action === 'clear-filter') {
+    clientState.issueFilter = '';
+  }
+
   const IssueView = issueView({
     page,
     itemsPerPage,
     data: metadata.linkedApplications[projectId].issues,
     clientState,
-    selectAll,
+    action,
   });
 
   return htm`
