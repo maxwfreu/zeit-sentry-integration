@@ -15,7 +15,6 @@ const store = {
 
 const itemsPerPage = 10;
 let page = 1;
-let selectAll = false;
 
 const getIssues = async (url, options = null) => {
   const response = await fetch(url, options);
@@ -44,7 +43,6 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
   // Reset state on load
   if (action === 'view') {
     page = 1;
-    selectAll = false;
   }
 
   const metadata = await zeitClient.getMetadata()
@@ -105,7 +103,6 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
         }
 
         issues_returned = await getIssues(`https://sentry.io/api/0/projects/${metadata.linkedApplications[projectId].organizationSlug}/react/issues/`, options)
-        console.log(issues_returned)
       } catch (err) {
         console.error(err)
         throwDisplayableError({ message: 'There was an error fetching issues.' })
@@ -133,10 +130,6 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
     }
   }
 
-  if (action === 'select-all') {
-    selectAll = true;
-  }
-
   if (action === 'resolve') {
     const issuesToResolve = [];
     metadata.linkedApplications[projectId].issues.forEach((el) => {
@@ -152,7 +145,7 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
     itemsPerPage,
     data: metadata.linkedApplications[projectId].issues,
     clientState,
-    selectAll,
+    action,
   });
 
   return htm`

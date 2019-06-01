@@ -2,18 +2,37 @@ const {withUiHook, htm} = require('@zeit/integration-utils');
 var moment = require('moment');
 
 module.exports = (props) => {
-  const { page, itemsPerPage, data, clientState, selectAll } = props;
+  const {
+    page,
+    itemsPerPage,
+    data,
+    clientState,
+    action,
+  } = props;
 
   return htm`
     <Container>
       <Box display="flex" justifyContent="space-between">
-        <H1> Errors (${data.length})</H1>
+        <Box display="flex" flexDirection="row">
+          <H1> Errors (${data.length})</H1>
+          <Input name="issueFilter" label="Filter Issues" value="" />
+        </Box>
         <Button action="getIssues" small>Refresh</Button>
       </Box>
       <Box display="flex" justifyContent="space-between" alignItems="center">
-        <Box>
-          <Button action="resolve" small>Resolve</Button>
-          <Button action="select-all" secondary small>Select All</Button>
+        <Box display="flex" flexDirection="row" alignItems="center">
+          <Box marginRight="8px">
+            <Button action="resolve" small>Resolve</Button>
+          </Box>
+          <Box marginRight="8px">
+            <Button
+              action="${action === 'select-all' ? 'deselect-all': 'select-all'}"
+              secondary
+              small
+            >
+               ${action === 'select-all' ? 'Deselect All': 'Select All'}
+            </Button>
+          </Box>
         </Box>
         <Box display="flex" flexDirection="row" marginRight="16px">
           <Box width="64px">Count</Box>
@@ -24,12 +43,19 @@ module.exports = (props) => {
         if (page === Math.ceil((index + 1)/itemsPerPage)) {
           const imgURL = `https://s1.sentry-cdn.com/_static/df7081b5c6bb784faeea5116bd62b398/sentry/dist/${item.project.slug}.svg`
           const lastSeen = moment(item.lastSeen).fromNow();
+          let isChecked = clientState[item.id] === true;
+          if (action === 'getIssues' || action === 'deselect-all') {
+            isChecked = false;
+          }
+          if (action === 'select-all') {
+            isChecked = true;
+          }
           return htm`
             <Box display="flex" justifyContent="space-between" flexDirection="column" border="1px solid #eaeaea" borderRadius="5px" padding="16px" margin="8px 0">
               <Box display="flex" justifyContent="space-between">
                 <Box display="flex" flexDirection="row">
                   <Box marginRight="8px">
-                    <Checkbox name="${item.id}" checked="${clientState[item.id] === true || selectAll }" />
+                    <Checkbox name="${item.id}" checked="${isChecked}" />
                   </Box>
                   <Box>
                     <Link href="${item.permalink}?project=${item.project.id}&query=is%3Aunresolved" target="_blank">
