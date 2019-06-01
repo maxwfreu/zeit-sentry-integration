@@ -140,6 +140,10 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
     console.log("Resolving: ", issuesToResolve);
   }
 
+  if (action === 'clear-filter') {
+    clientState.issueFilter = '';
+  }
+
   const IssueView = issueView({
     page,
     itemsPerPage,

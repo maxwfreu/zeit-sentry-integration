@@ -12,10 +12,22 @@ module.exports = (props) => {
 
   return htm`
     <Container>
-      <Box display="flex" justifyContent="space-between">
+      <Box display="flex" justifyContent="space-between" padding="16px 0">
         <Box display="flex" flexDirection="row">
-          <H1> Errors (${data.length})</H1>
-          <Input name="issueFilter" label="Filter Issues" value="" />
+          <Box marginRight="16px" display="flex" alignItems="center">
+            <H1> Errors (${data.length})</H1>
+          </Box>
+          <Box marginRight="16px" display="flex" alignItems="center">
+            <Input name="issueFilter" value="${clientState.issueFilter || ''}" />
+          </Box>
+          <Box marginRight="16px" display="flex" alignItems="center">
+            <Button action="filter-issues" secondary small>Filter</Button>
+          </Box>
+          ${clientState.issueFilter ? htm`
+            <Box marginRight="16px" display="flex" alignItems="center">
+              <Button action="clear-filter" secondary small>Clear</Button>
+            </Box>
+          ` : ""}
         </Box>
         <Button action="getIssues" small>Refresh</Button>
       </Box>
@@ -40,7 +52,21 @@ module.exports = (props) => {
         </Box>
       </Box>
       ${data.map((item, index) => {
-        if (page === Math.ceil((index + 1)/itemsPerPage)) {
+        let inFilter = true;
+        const { issueFilter } = clientState;
+        if (issueFilter) {
+          inFilter = false;
+          if (item.culprit.toLowerCase().indexOf(issueFilter.toLowerCase()) > -1) {
+            inFilter = true;
+          }
+          if (item.metadata.type.toLowerCase().indexOf(issueFilter.toLowerCase()) > -1) {
+            inFilter = true;
+          }
+          if (item.metadata.value.toLowerCase().indexOf(issueFilter.toLowerCase()) > -1) {
+            inFilter = true;
+          }
+        }
+        if (page === Math.ceil((index + 1)/itemsPerPage) && inFilter) {
           const imgURL = `https://s1.sentry-cdn.com/_static/df7081b5c6bb784faeea5116bd62b398/sentry/dist/${item.project.slug}.svg`
           const lastSeen = moment(item.lastSeen).fromNow();
           let isChecked = clientState[item.id] === true;
