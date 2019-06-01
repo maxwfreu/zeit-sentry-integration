@@ -1,10 +1,21 @@
 const { withUiHook, htm } = require('@zeit/integration-utils')
-// const rp = require('request-promise')
+var moment = require('moment');
+const mockData = require('./mockData');
+const issueView = require('./issueView');
+const data = mockData();
 require('isomorphic-fetch');
 const { promisify } = require('util')
 
-const MAX_GRAPHS = 5
 const sleep = promisify(setTimeout)
+
+const store = {
+  secretId: '',
+  secretKey: ''
+};
+
+const itemsPerPage = 10;
+let page = 1;
+
 
 const getIssues = async (url, options = null) => {
   const response = await fetch(url, options);
@@ -29,6 +40,11 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
       </Page>
     `
   }
+
+  if (action === 'view') {
+    page = 1;
+  }
+
   const metadata = await zeitClient.getMetadata()
   if (!metadata.linkedApplications) {
     metadata.linkedApplications = {}
@@ -58,9 +74,6 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
     }
 
     if (action === 'getIssues') {
-      if (metadata.linkedApplications[projectId].issues.length >= MAX_GRAPHS) {
-        throwDisplayableError({ message: `Up to ${MAX_GRAPHS} issues can be configured.` })
-      }
       if (!clientState.graphQuery) {
         throwDisplayableError({ message: 'A graph query is required' })
       }
@@ -102,6 +115,19 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
       throw err
     }
   }
+
+  if (action === 'next-page') {
+    if (page * itemsPerPage < data.length) {
+      page++;
+    }
+  }
+
+  if (action === 'prev-page') {
+    if ( page > 1) {
+      page --;
+    }
+  }
+  const IssueView = issueView({ page, itemsPerPage, data })
 
   return htm`
         <Page>
@@ -154,6 +180,8 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
               </Box>
             </Container>
 
+            ${IssueView}
         </Page>
     `
-})
+});
+
