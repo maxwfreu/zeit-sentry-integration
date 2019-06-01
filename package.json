@@ -10,7 +10,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@sentry/browser": "^5.4.0",
     "@zeit/integration-utils": "latest",
+    "isomorphic-fetch": "^2.2.1",
     "request": "2.88.0",
     "request-promise": "4.2.4"
   }
