@@ -15,7 +15,7 @@ const store = {
 
 const itemsPerPage = 10;
 let page = 1;
-
+let selectAll = false;
 
 const getIssues = async (url, options = null) => {
   const response = await fetch(url, options);
@@ -41,8 +41,10 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
     `
   }
 
+  // Reset state on load
   if (action === 'view') {
     page = 1;
+    selectAll = false;
   }
 
   const metadata = await zeitClient.getMetadata()
@@ -130,9 +132,28 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
       page --;
     }
   }
-  const IssueView = issueView({ page, itemsPerPage, data: metadata.linkedApplications[projectId].issues })
 
-  console.log(metadata.linkedApplications[projectId].issues)
+  if (action === 'select-all') {
+    selectAll = true;
+  }
+
+  if (action === 'resolve') {
+    const issuesToResolve = [];
+    metadata.linkedApplications[projectId].issues.forEach((el) => {
+      if (clientState[el.id]) {
+        issuesToResolve.push(el.id);
+      }
+    })
+    console.log("Resolving: ", issuesToResolve);
+  }
+
+  const IssueView = issueView({
+    page,
+    itemsPerPage,
+    data: metadata.linkedApplications[projectId].issues,
+    clientState,
+    selectAll,
+  });
 
   return htm`
         <Page>
