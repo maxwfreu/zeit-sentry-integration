@@ -2,7 +2,7 @@ const { withUiHook, htm } = require('@zeit/integration-utils')
 const moment = require('moment');
 const { promisify } = require('util')
 const issueView = require('./issueView');
-const { getIssues } = require('./actions')
+const { getIssues } = require('./api')
 
 const itemsPerPage = 10;
 let page = 1;
@@ -89,7 +89,7 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
           },
         }
 
-        issues = await getIssues(`https://sentry.io/api/0/projects/${metadata.linkedApplications[projectId].organizationSlug}/react/issues/`, options)
+        issues = await getIssues(`https://sentry.io/api/0/projects/${metadata.linkedApplications[projectId].organizationSlug}/${metadata.linkedApplications[projectId].projectSlug}/issues/`, options)
       } catch (err) {
         throwDisplayableError({ message: 'There was an error fetching issues.' })
       }
