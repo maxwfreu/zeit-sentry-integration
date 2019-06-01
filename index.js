@@ -52,6 +52,10 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
   if (!metadata.linkedApplications[projectId]) {
     metadata.linkedApplications[projectId] = {
       envAuthToken: '',
+
+      organizationSlug: '',
+      projectSlug: '',
+
       issues: [],
     }
   }
@@ -71,10 +75,20 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
         'AUTH_TOKEN',
         secretNameApiKey
       )
+
+      metadata.linkedApplications[projectId].organizationSlug = clientState.organizationSlug
+      await zeitClient.setMetadata(metadata)
+      metadata.linkedApplications[projectId].projectSlug = clientState.projectSlug
+      await zeitClient.setMetadata(metadata)
     }
 
     if (action === 'getIssues') {
-      if(!metadata.linkedApplications[projectId].envAuthToken){
+      if(
+        !metadata.linkedApplications[projectId].envAuthToken ||
+        !metadata.linkedApplications[projectId].organizationSlug ||
+        !metadata.linkedApplications[projectId].projectSlug
+
+      ){
         throwDisplayableError({ message: 'AUTH_TOKEN must be set' })
       }
 
@@ -88,7 +102,7 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
           },
         }
 
-        issues_returned = await getIssues('https://sentry.io/api/0/projects/mario-garcia/react/issues/', options)
+        issues_returned = await getIssues(`https://sentry.io/api/0/projects/${metadata.linkedApplications[projectId].organizationSlug}/react/issues/`, options)
         console.log(issues_returned)
       } catch (err) {
         console.error(err)
@@ -139,22 +153,21 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
                 type="password"
                 width="100%"
               />
+             <Input
+                label="ORGANIZATION_SLUG"
+                name="organizationSlug"
+                value=${metadata.linkedApplications[projectId].organizationSlug || ''}
+                width="100%"
+              />
+             <Input
+                label="PROJECT_SLUG"
+                name="projectSlug"
+                value=${metadata.linkedApplications[projectId].projectSlug || ''}
+                width="100%"
+              />
             </Container>
             <Container>
               <Button action="submit">Submit Keys</Button>
-            </Container>
-
-
-            <Container>
-              <H1>Issues</H1>
-              ${
-                !metadata.linkedApplications[projectId].issues.length ?
-                htm`<P>No issues retrieved yet. To retrieve issues, add an <B>AUTH_TOKEN</B> above and click the button below</P>` :
-                htm`<P>Issues will update on refresh</P>`
-              }
-              <Box display="flex" justifyContent="space-between">
-                <Button action="getIssues">Get Issues</Button>
-              </Box>
             </Container>
 
             ${IssueView}

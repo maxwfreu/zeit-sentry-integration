@@ -6,7 +6,10 @@ module.exports = (props) => {
 
   return htm`
     <Container>
-      <H1> Errors (${data.length})</H1>
+      <Box display="flex" justifyContent="space-between">
+        <H1> Errors (${data.length})</H1>
+        <Button action="getIssues">Get Issues</Button>
+      </Box>
       ${data.map((item, index) => {
         if (page === Math.ceil((index + 1)/itemsPerPage)) {
           const imgURL = `https://s1.sentry-cdn.com/_static/df7081b5c6bb784faeea5116bd62b398/sentry/dist/${item.project.slug}.svg`
