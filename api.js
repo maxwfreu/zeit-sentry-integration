@@ -1,5 +1,4 @@
 require('isomorphic-fetch');
-// require('url-polyfill')
 require('url-search-params-polyfill');
 var URL = require('url').URL;
 
@@ -7,12 +6,10 @@ const fetchRequest = async (url, options = null) => {
   const response = await fetch(url, options);
   const json = await response.json();
 
-  if (!response.body.ok) {
+  if (!response.ok) {
     return Promise.reject(new Error(json.detail));
   }
 
-  console.log(response)
-  console.log(json)
   return Promise.resolve(json);
 }
 
@@ -31,8 +28,6 @@ const request = (method, path = '', params = null, options = null) => {
     ...options
   };
 
-  console.log(allOptions)
-
   return fetchRequest(url.href, allOptions);
 }
 
@@ -44,7 +39,6 @@ module.exports.getIssues = (authToken, organizationSlug, projectSlug) => {
     },
   }
 
-  console.log('getIssues...')
   return request('GET', `/projects/${organizationSlug}/${projectSlug}/issues/`, null, options)
 }
 

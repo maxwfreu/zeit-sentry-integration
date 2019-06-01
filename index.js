@@ -93,7 +93,7 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
           metadata.linkedApplications[projectId].projectSlug,
         );
       } catch (err) {
-        throwDisplayableError({ message: 'There was an error fetching issues.' })
+        throwDisplayableError({ message: `There was an error fetching issues. ${err.message}` })
       }
       metadata.linkedApplications[projectId].issues = issues;
       await zeitClient.setMetadata(metadata)
@@ -114,10 +114,9 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
           issuesToResolve,
           'resolved',
         )
-        console.log("Resolving: ", issuesToResolve);
       }
       catch (err) {
-        throwDisplayableError({ message: `There was an error fetching issues. ${err.message}` })
+        throwDisplayableError({ message: `There was an error updating issues. ${err.message}` })
       }
     }
   } catch (err) {
