@@ -2,12 +2,16 @@ const { withUiHook, htm } = require('@zeit/integration-utils')
 const moment = require('moment');
 const { promisify } = require('util')
 const issueView = require('./issueView');
-const { getIssues } = require('./api')
+const {
+  getIssues,
+  updateIssues,
+} = require('./api')
 
 const itemsPerPage = 10;
 let page = 1;
 let isMissingSettings = true;
 let showSettings = false;
+let selectAll = false;
 
 const throwDisplayableError = ({ message }) => {
   const error = new Error(message)
@@ -26,8 +30,10 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
     `
   }
 
+  // Reset state on load
   if (action === 'view') {
     page = 1;
+    selectAll = false;
   }
 
   const metadata = await zeitClient.getMetadata()
@@ -82,19 +88,38 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
 
       let issues
       try {
-        const options = {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${metadata.linkedApplications[projectId].envAuthToken}`
-          },
-        }
-
-        issues = await getIssues(`https://sentry.io/api/0/projects/${metadata.linkedApplications[projectId].organizationSlug}/${metadata.linkedApplications[projectId].projectSlug}/issues/`, options)
+        issues = await getIssues(
+          metadata.linkedApplications[projectId].envAuthToken,
+          metadata.linkedApplications[projectId].organizationSlug,
+          metadata.linkedApplications[projectId].projectSlug,
+        );
       } catch (err) {
         throwDisplayableError({ message: 'There was an error fetching issues.' })
       }
       metadata.linkedApplications[projectId].issues = issues;
       await zeitClient.setMetadata(metadata)
+    }
+
+    if (action === 'resolve') {
+      const issuesToResolve = [];
+      metadata.linkedApplications[projectId].issues.forEach((el) => {
+        if (clientState[el.id]) {
+          issuesToResolve.push(el.id);
+        }
+      })
+      try {
+        await updateIssues(
+          metadata.linkedApplications[projectId].envAuthToken,
+          metadata.linkedApplications[projectId].organizationSlug,
+          metadata.linkedApplications[projectId].projectSlug,
+          issuesToResolve,
+          'resolved',
+        )
+        console.log("Resolving: ", issuesToResolve);
+      }
+      catch (err) {
+        throwDisplayableError({ message: `There was an error fetching issues. ${err.message}` })
+      }
     }
   } catch (err) {
     if (err.displayable) {
@@ -115,13 +140,25 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
       page --;
     }
   }
-  const IssueView = issueView({ page, itemsPerPage, data: metadata.linkedApplications[projectId].issues })
+
+  if (action === 'select-all') {
+    selectAll = true;
+  }
+
 
   let isMissingSettings = (
     !metadata.linkedApplications[projectId].envAuthToken ||
     !metadata.linkedApplications[projectId].organizationSlug ||
     !metadata.linkedApplications[projectId].projectSlug
   );
+
+  const IssueView = issueView({
+    page,
+    itemsPerPage,
+    data: metadata.linkedApplications[projectId].issues,
+    clientState,
+    selectAll,
+  });
 
   return htm`
     <Page>
@@ -165,6 +202,7 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
           `:
           htm`
             <Box>
+              ${errorMessage && htm`<Notice type="error">${errorMessage}</Notice>`}
               <Container>
                 <Button action="showSettings">Update Settings</Button>
               </Container>
