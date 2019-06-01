@@ -74,16 +74,8 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
     }
 
     if (action === 'getIssues') {
-      if (!clientState.graphQuery) {
-        throwDisplayableError({ message: 'A graph query is required' })
-      }
       if(!metadata.linkedApplications[projectId].envAuthToken){
         throwDisplayableError({ message: 'AUTH_TOKEN must be set' })
-      }
-      const queryExists = metadata.linkedApplications[projectId].issues
-        .find(({ query }) => query === clientState.graphQuery)
-      if (queryExists) {
-        throwDisplayableError({ message: 'A graph with the query already exists.' })
       }
 
       let issues_returned
@@ -102,10 +94,7 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
         console.error(err)
         throwDisplayableError({ message: 'There was an error fetching issues.' })
       }
-      metadata.linkedApplications[projectId].issues.push({
-        query: clientState.graphQuery,
-        issues_returned,
-      })
+      metadata.linkedApplications[projectId].issues = issues_returned;
       await zeitClient.setMetadata(metadata)
     }
   } catch (err) {
@@ -117,7 +106,7 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
   }
 
   if (action === 'next-page') {
-    if (page * itemsPerPage < data.length) {
+    if (page * itemsPerPage < metadata.linkedApplications[projectId].issues.length) {
       page++;
     }
   }
@@ -127,7 +116,9 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
       page --;
     }
   }
-  const IssueView = issueView({ page, itemsPerPage, data })
+  const IssueView = issueView({ page, itemsPerPage, data: metadata.linkedApplications[projectId].issues })
+
+  console.log(metadata.linkedApplications[projectId].issues)
 
   return htm`
         <Page>
@@ -161,20 +152,6 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
                 htm`<P>No issues retrieved yet. To retrieve issues, add an <B>AUTH_TOKEN</B> above and click the button below</P>` :
                 htm`<P>Issues will update on refresh</P>`
               }
-              ${metadata.linkedApplications[projectId].issues.map(
-                ({query, issues_returned}, index) => htm`
-                <Container>
-                  <H2>${query.replace(/{/g,'(').replace(/}/g,')') }</H2>
-                  <P>SearchID: ${query}</P>
-                  <P>Issue Lenght: ${JSON.stringify(issues_returned)}</P>
-
-                </Container>`)}
-              <Input
-                label="Issue Search ID"
-                name="graphQuery"
-                placeholder="avg:system.load.1{*}"
-                width="100%"
-              />
               <Box display="flex" justifyContent="space-between">
                 <Button action="getIssues">Get Issues</Button>
               </Box>

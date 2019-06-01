@@ -9,7 +9,6 @@ module.exports = (props) => {
       <H1> Errors (${data.length})</H1>
       ${data.map((item, index) => {
         if (page === Math.ceil((index + 1)/itemsPerPage)) {
-          console.log(index + 1)
           const imgURL = `https://s1.sentry-cdn.com/_static/df7081b5c6bb784faeea5116bd62b398/sentry/dist/${item.project.slug}.svg`
           const lastSeen = moment(item.lastSeen).fromNow();
           return htm`
