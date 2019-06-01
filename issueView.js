@@ -12,7 +12,7 @@ module.exports = (props) => {
 
   return htm`
     <Container>
-      <Box display="flex" justifyContent="space-between" padding="16px 0">
+      <Box display="flex" justifyContent="space-between" padding="16px 0" alignItems="center">
         <Box display="flex" flexDirection="row">
           <Box marginRight="16px" display="flex" alignItems="center">
             <H1> Errors (${data.length})</H1>
@@ -79,15 +79,15 @@ module.exports = (props) => {
           return htm`
             <Box display="flex" justifyContent="space-between" flexDirection="column" border="1px solid #eaeaea" borderRadius="5px" padding="16px" margin="8px 0">
               <Box display="flex" justifyContent="space-between">
-                <Box display="flex" flexDirection="row">
+                <Box display="flex" flexDirection="row" overflow="hidden">
                   <Box marginRight="8px">
                     <Checkbox name="${item.id}" checked="${isChecked}" />
                   </Box>
-                  <Box>
+                  <Box overflow="hidden">
                     <Link href="${item.permalink}?project=${item.project.id}&query=is%3Aunresolved" target="_blank">
                       <Box display="flex">
                         <Box color="#067df7" fontWeight="bold" marginRight="5px">${item.metadata.type}</Box>
-                        <Box color="black" >${item.culprit}</Box>
+                        <Box color="black" overflow="hidden" textOverflow="ellipsis">${item.culprit}</Box>
                       </Box>
                     </Link>
                     <P>${item.metadata.value}</P>
