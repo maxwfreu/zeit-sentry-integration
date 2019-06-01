@@ -1,23 +1,13 @@
 const { withUiHook, htm } = require('@zeit/integration-utils')
 const moment = require('moment');
 const { promisify } = require('util')
-require('isomorphic-fetch');
-
-
 const issueView = require('./issueView');
-// const mockData = require('./mockData');
-// const data = mockData();
+const { getIssues } = require('./actions')
 
 const itemsPerPage = 10;
 let page = 1;
 let isMissingSettings = true;
 let showSettings = false;
-
-const getIssues = async (url, options = null) => {
-  const response = await fetch(url, options);
-  const json = await response.json();
-  return Promise.resolve(json);
-}
 
 const throwDisplayableError = ({ message }) => {
   const error = new Error(message)
