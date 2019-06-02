@@ -31,16 +31,16 @@ const request = (method, path = '', params = null, options = null) => {
   return fetchRequest(url.href, allOptions);
 }
 
-module.exports.getIssues = (authToken, organizationSlug, projectSlug) => {
+module.exports.getIssues = (authToken, organizationSlug, projectSlug, status='unresolved') => {
   const options = {
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${authToken}`
     },
   }
-
+  console.log(status)
   const params = {
-    query: '',
+    query: status === 'all' ? '' : `is:${status}`,
   }
 
   return request('GET', `/projects/${organizationSlug}/${projectSlug}/issues/`, params, options)
