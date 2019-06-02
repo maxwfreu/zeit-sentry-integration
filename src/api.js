@@ -85,7 +85,7 @@ const getPaginationLinks = (res) => {
   const nextarr = linkHeadersArr[1].split(';');
 
   const prev = prevArr[0].trim()
-  console.log(prevArr)
+
   const needsPrevLink = prevArr[2].indexOf('results="true"') > -1;
   if (needsPrevLink) {
     prevLink = prev.substr(1, prev.length - 2);
@@ -122,7 +122,6 @@ module.exports.getIssues = async (authToken, organizationSlug, projectSlug, stat
 
 module.exports.getIssuesFromPaginationLink = async (authToken, link) => {
   const options = getHeaders(authToken);
-  console.log(link)
   const result = await request('GET', link.replace('https://sentry.io/api/0', ''), null, options)
   const paginationLinks = getPaginationLinks(result.response)
 

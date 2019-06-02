@@ -110,10 +110,6 @@ module.exports = (props) => {
                 </Button>
               </Box>
             </Box>
-            <Box display="flex" flexDirection="row" marginRight="16px">
-              <Box width="64px" display="flex" justifyContent="center" alignItems="center">Count</Box>
-              <Box display="flex" justifyContent="center" alignItems="center">Assigned To</Box>
-            </Box>
           </Box>
           ${filteredIssues.map((item, index) => {
             const assignedToId = `${item.id}:assign-to`;
@@ -137,9 +133,9 @@ module.exports = (props) => {
             const textDecoration = item.status === 'resolved' ? 'line-through' : '';
 
             return htm`
-              <Box display="flex" justifyContent="space-between" flexDirection="column" border="1px solid #eaeaea" borderRadius="5px" padding="16px" margin="8px 0">
-                <Box display="flex" justifyContent="space-between">
-                  <Box display="flex" flexDirection="row" overflow="hidden">
+              <Box position="relative" display="flex" justifyContent="space-between" flexDirection="column" border="1px solid #eaeaea" borderRadius="5px" padding="16px" margin="8px 0">
+                <Box display="flex" justifyContent="space-between" flexWrap="wrap">
+                  <Box display="flex" flexDirection="row" overflow="hidden" maxWidth="600px">
                     <Box marginRight="8px">
                       <Checkbox name="${item.id}" checked="${isChecked}" />
                     </Box>
@@ -147,7 +143,9 @@ module.exports = (props) => {
                       <Link href="${item.permalink}?project=${item.project.id}&query=is%3Aunresolved" target="_blank">
                         <Box display="flex">
                           <Box color="#067df7" fontWeight="bold" marginRight="5px" textDecoration="${textDecoration}">${item.metadata.type}</Box>
-                          <Box color="black" overflow="hidden" textOverflow="ellipsis" textDecoration="${textDecoration}">${item.culprit}</Box>
+                          <Box color="black" overflow="hidden" textOverflow="ellipsis" textDecoration="${textDecoration}" wordBreak="break-all">
+                            ${item.culprit}
+                          </Box>
                         </Box>
                       </Link>
                       <P>${item.metadata.value}</P>
@@ -161,10 +159,6 @@ module.exports = (props) => {
                     </Box>
                   </Box>
                   <Box display="flex">
-                    <Box width="64px" display="flex" justifyContent="center" alignItems="center">
-                      ${item.count}
-                    </Box>
-
                     <Box display="flex" justifyContent="center" alignItems="center">
                       <Select name="${assignedToId}" value="${assignedToValue}" action="${assignedAction}">
                         <Option value="" caption="No One" />
@@ -175,8 +169,21 @@ module.exports = (props) => {
                         })}
                       </Select>
                     </Box>
-
                   </Box>
+                </Box>
+                <Box
+                  alignItems="center"
+                  backgroundColor="rgb(234, 234, 234)"
+                  borderTopLeftRadius="5px"
+                  bottom="0"
+                  display="flex"
+                  right="0"
+                  justifyContent="center"
+                  width="64px"
+                  zIndex="1"
+                  position="absolute"
+                >
+                  ${item.count}
                 </Box>
               </Box>
             `
