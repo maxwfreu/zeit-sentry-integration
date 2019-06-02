@@ -181,28 +181,29 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
     }
     if (action === Actions.SUBMIT) {
       requireClientSetup(clientState);
-      // set metadata
-      metadata.linkedApplications[projectId].envAuthToken = clientState.envAuthToken
-      await zeitClient.setMetadata(metadata)
-      // set env vars
-      const secretNameApiKey = await zeitClient.ensureSecret(
-        'sentry-auth-token',
-        metadata.linkedApplications[projectId].envAuthToken
-      )
-      await zeitClient.upsertEnv(
-        payload.projectId,
-        'SENTRY_AUTH_TOKEN',
-        secretNameApiKey
-      )
-
-      metadata.linkedApplications[projectId].organizationSlug = clientState.organizationSlug
-      await zeitClient.setMetadata(metadata)
-      metadata.linkedApplications[projectId].projectSlug = clientState.projectSlug
-      await zeitClient.setMetadata(metadata)
 
       showSettings = false;
       let dsnRes;
       try {
+        // set metadata
+        metadata.linkedApplications[projectId].envAuthToken = clientState.envAuthToken
+        await zeitClient.setMetadata(metadata)
+        // set env vars
+        const secretNameApiKey = await zeitClient.ensureSecret(
+          'sentry-auth-token',
+          metadata.linkedApplications[projectId].envAuthToken
+        )
+        await zeitClient.upsertEnv(
+          payload.projectId,
+          'SENTRY_AUTH_TOKEN',
+          secretNameApiKey
+        )
+
+        metadata.linkedApplications[projectId].organizationSlug = clientState.organizationSlug
+        await zeitClient.setMetadata(metadata)
+        metadata.linkedApplications[projectId].projectSlug = clientState.projectSlug
+        await zeitClient.setMetadata(metadata)
+
         dsnRes = await getDSN(
           clientState.envAuthToken,
           clientState.organizationSlug,
@@ -255,13 +256,31 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
           'SENTRY_ORGANIZATION_SLUG',
           secreteSentryOrgSlug
         )
+
+        // const data = {
+        //   name: payload.project.name,
+        //   version: 2,
+        // };
+        // const t = await zeitClient.fetch('/v9/now/deployments?forceNew=1', {
+        //   method: 'POST',
+        //   data
+        // });
+
+        // const {deployments} = await zeitClient.fetchAndThrow(apiUrl, {method: 'GET'});
       } catch (err) {
         showSettings = true;
         throwDisplayableError({ message: `Error connecting to Sentry. Please double check credentials. Error: ${err.message}` })
       }
       if (dsnRes) {
         try {
-          await refreshIssues(clientState, metadata, projectId, zeitClient)
+          await refreshIssues(clientState, metadata, projectId, zeitClient);
+          let members = await getMembers(
+            metadata.linkedApplications[projectId].envAuthToken,
+            metadata.linkedApplications[projectId].organizationSlug,
+            metadata.linkedApplications[projectId].projectSlug,
+          );
+          metadata.linkedApplications[projectId].members = members;
+          await zeitClient.setMetadata(metadata)
         } catch (err) {
           throwDisplayableError({ message: `There was an error fetching issues. ${err.message}` })
         }
@@ -407,6 +426,11 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
   }
 
   let View;
+  isMissingSettings = (
+    !metadata.linkedApplications[projectId].envAuthToken ||
+    !metadata.linkedApplications[projectId].organizationSlug ||
+    !metadata.linkedApplications[projectId].projectSlug
+  );
   if (isMissingSettings || showSettings) {
     View = settingsView({
       metadata,
