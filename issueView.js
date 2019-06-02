@@ -8,6 +8,8 @@ module.exports = (props) => {
     data,
     clientState,
     action,
+    prevLink,
+    nextLink,
   } = props;
 
   return htm`
@@ -17,11 +19,11 @@ module.exports = (props) => {
           <Box display="flex" justifyContent="space-between" padding="16px 0" alignItems="center">
             <Box display="flex" flexDirection="row" alignItems="center">
               <Box marginRight="8px">Sory By:</Box>
-              <Select name="issueSortByFilter" value="${clientState.issueSortByFilter || 'firstSeen'}" action="getIssues">
+              <Select name="issueSortByFilter" value="${clientState.issueSortByFilter || 'freq'}" action="getIssues">
                 <Option value="priority" caption="Priority" />
-                <Option value="firstSeen" caption="First Seen" />
-                <Option value="lastSeen" caption="Last Seen" />
-                <Option value="frequency" caption="Frequency" />
+                <Option value="new" caption="First Seen" />
+                <Option value="date" caption="Last Seen" />
+                <Option value="freq" caption="Frequency" />
               </Select>
               <Box marginLeft="8px" marginRight="8px">Status Filter:</Box>
               <Select name="issueStatusFilter" value="${clientState.issueStatusFilter || 'unresolved'}" action="getIssues">
@@ -85,13 +87,13 @@ module.exports = (props) => {
             const { issueFilter } = clientState;
             if (issueFilter) {
               inFilter = false;
-              if (item.culprit.toLowerCase().indexOf(issueFilter.toLowerCase()) > -1) {
+              if (item.culprit && item.culprit.toLowerCase().indexOf(issueFilter.toLowerCase()) > -1) {
                 inFilter = true;
               }
-              if (item.metadata.type.toLowerCase().indexOf(issueFilter.toLowerCase()) > -1) {
+              if (item.metadata.type && item.metadata.type.toLowerCase().indexOf(issueFilter.toLowerCase()) > -1) {
                 inFilter = true;
               }
-              if (item.metadata.value.toLowerCase().indexOf(issueFilter.toLowerCase()) > -1) {
+              if (item.metadata.value && item.metadata.value.toLowerCase().indexOf(issueFilter.toLowerCase()) > -1) {
                 inFilter = true;
               }
             }
@@ -148,11 +150,11 @@ module.exports = (props) => {
         <FsFooter>
           <Box display="flex" justifyContent="space-between" width="100%">
             <Box display="flex" alignItems="center">
-              Page: ${page} / ${Math.max(Math.ceil(data.length / itemsPerPage), 1)}
+              Issues: ${itemsPerPage % page} - ${(itemsPerPage * page)}
             </Box>
             <Box>
-              <Button action="prev-page" disabled="${page === 1}">prev</Button>
-              <Button action="next-page" disabled="${page * itemsPerPage >= data.length}">next</Button>
+              <Button action="prev-page" disabled="${!prevLink}">prev</Button>
+              <Button action="next-page" disabled="${!nextLink}">next</Button>
             </Box>
           </Box>
         </FsFooter>

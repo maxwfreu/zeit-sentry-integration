@@ -10,7 +10,10 @@ const fetchRequest = async (url, options = null) => {
     return Promise.reject(new Error(json.detail));
   }
 
-  return Promise.resolve(json);
+  return Promise.resolve({
+    response,
+    json,
+  });
 }
 
 const request = (method, path = '', params = null, options = null) => {
@@ -31,19 +34,39 @@ const request = (method, path = '', params = null, options = null) => {
   return fetchRequest(url.href, allOptions);
 }
 
-module.exports.getIssues = (authToken, organizationSlug, projectSlug, status='unresolved') => {
+module.exports.getIssues = (authToken, organizationSlug, projectSlug, status='unresolved', sort='freq') => {
   const options = {
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${authToken}`
     },
   }
-  console.log(status)
+
   const params = {
     query: status === 'all' ? '' : `is:${status}`,
+    sort,
+    limit: '10'
   }
 
   return request('GET', `/projects/${organizationSlug}/${projectSlug}/issues/`, params, options)
+}
+
+module.exports.paginateIssues = (authToken, organizationSlug, projectSlug, paginationURL, status='unresolved', sort='freq',) => {
+  const options = {
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${authToken}`
+    },
+  }
+
+  // const params = {
+  //   query: status === 'all' ? '' : `is:${status}`,
+  //   sort,
+  //   limit: '10'
+  // }
+
+  console.log("paginate to: ", paginationURL)
+  return request('GET', paginationURL, {}, options)
 }
 
 module.exports.updateIssues = (authToken, organizationSlug, projectSlug, ids, status) => {

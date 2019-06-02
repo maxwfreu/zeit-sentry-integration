@@ -5,6 +5,7 @@ const issueView = require('./issueView');
 const {
   getIssues,
   updateIssues,
+  paginateIssues,
 } = require('./api')
 
 const itemsPerPage = 10;
@@ -18,6 +19,37 @@ const throwDisplayableError = ({ message }) => {
   error.displayable = true
   throw error
 }
+
+const getPaginationLinks = (res) => {
+  const linkHeaders = res.response.headers.get('Link');
+  if (!linkHeaders) {
+    return {
+      prevLink: '',
+      nextLink: '',
+    }
+  }
+  linkHeadersArr = linkHeaders.split(',');
+  const prevArr = linkHeadersArr[0].split(';');
+  const nextarr = linkHeadersArr[1].split(';');
+
+  const prev = prevArr[0].trim()
+  console.log(prevArr)
+  const needsPrevLink = prevArr[2].indexOf('results="true"') > -1;
+  if (needsPrevLink) {
+    prevLink = prev.substr(1, prev.length - 2);
+  } else {
+    prevLink = '';
+  }
+
+  const next = nextarr[0].trim()
+  const needsNextLink = nextarr[2].indexOf('results="true"') > -1;
+  if (needsNextLink) {
+    nextLink = next.substr(1, next.length - 2);
+  } else {
+    nextLink = '';
+  }
+  return { prevLink, nextLink };
+};
 
 module.exports = withUiHook(async ({ payload, zeitClient }) => {
   const { clientState, action, projectId } = payload
@@ -45,6 +77,8 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
       organizationSlug: '',
       projectSlug: '',
       issues: [],
+      prevLink: '',
+      nextLink: '',
     }
   }
   let errorMessage = ''
@@ -87,13 +121,20 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
 
       let issues
       try {
-        issues = await getIssues(
+        const res = await getIssues(
           metadata.linkedApplications[projectId].envAuthToken,
           metadata.linkedApplications[projectId].organizationSlug,
           metadata.linkedApplications[projectId].projectSlug,
           clientState.issueStatusFilter || 'resolved',
+          clientState.issueSortByFilter || 'freq',
         );
-      } catch (err) {
+        issues = res.json;
+        const { prevLink, nextLink} = getPaginationLinks(res);
+        metadata.linkedApplications[projectId].prevLink = prevLink;
+        metadata.linkedApplications[projectId].nextLink = nextLink;
+        console.log("get issues prev link ", prevLink);
+        console.log("get issues next link ", nextLink)
+      } catch (err) {  
         throwDisplayableError({ message: `There was an error fetching issues. ${err.message}` })
       }
       metadata.linkedApplications[projectId].issues = issues;
@@ -120,23 +161,85 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
         throwDisplayableError({ message: `There was an error updating issues. ${err.message}` })
       }
     }
+
+    if (action === 'next-page') {
+      const linkToUse = metadata.linkedApplications[projectId].nextLink;
+      if (linkToUse) {
+        page++;
+        if (
+          !metadata.linkedApplications[projectId].envAuthToken ||
+          !metadata.linkedApplications[projectId].organizationSlug ||
+          !metadata.linkedApplications[projectId].projectSlug
+        ) {
+          throwDisplayableError({ message: 'AUTH_TOKEN, ORGANIZATION_SLUG, and PROJECT_SLUG must be set.' })
+        }
+
+        let issues;
+        try {
+          linkToUse = linkToUse.substr(linkToUse.indexOf('projects') - 1)
+          const res = await paginateIssues(
+            metadata.linkedApplications[projectId].envAuthToken,
+            metadata.linkedApplications[projectId].organizationSlug,
+            metadata.linkedApplications[projectId].projectSlug,
+            linkToUse.substr(linkToUse.indexOf('projects') - 1),
+            clientState.issueStatusFilter || 'resolved',
+            clientState.issueSortByFilter || 'freq',
+          );
+          issues = res.json;
+          const { prevLink, nextLink} = getPaginationLinks(res);
+          metadata.linkedApplications[projectId].prevLink = prevLink;
+          metadata.linkedApplications[projectId].nextLink = nextLink;
+          console.log("get page prev link ", prevLink);
+          console.log("get page next link ", nextLink)
+        } catch (err) {
+          throwDisplayableError({ message: `There was an error fetching issues. ${err.message}` })
+        }
+        metadata.linkedApplications[projectId].issues = issues;
+        await zeitClient.setMetadata(metadata)
+      }
+    }
+
+    if (action === 'prev-page') {
+      const linkToUse = metadata.linkedApplications[projectId].prevLink;
+      if (linkToUse) {
+        page--;
+        if (
+          !metadata.linkedApplications[projectId].envAuthToken ||
+          !metadata.linkedApplications[projectId].organizationSlug ||
+          !metadata.linkedApplications[projectId].projectSlug
+        ) {
+          throwDisplayableError({ message: 'AUTH_TOKEN, ORGANIZATION_SLUG, and PROJECT_SLUG must be set.' })
+        }
+
+        let issues;
+        try {
+          linkToUse = linkToUse.substr(linkToUse.indexOf('projects') - 1)
+          const res = await paginateIssues(
+            metadata.linkedApplications[projectId].envAuthToken,
+            metadata.linkedApplications[projectId].organizationSlug,
+            metadata.linkedApplications[projectId].projectSlug,
+            linkToUse.substr(linkToUse.indexOf('projects') - 1),
+            clientState.issueStatusFilter || 'resolved',
+            clientState.issueSortByFilter || 'freq',
+          );
+          issues = res.json;
+          const { prevLink, nextLink} = getPaginationLinks(res);
+          metadata.linkedApplications[projectId].prevLink = prevLink;
+          metadata.linkedApplications[projectId].nextLink = nextLink;
+          console.log("get page prev link ", prevLink);
+          console.log("get page next link ", nextLink)
+        } catch (err) {
+          throwDisplayableError({ message: `There was an error fetching issues. ${err.message}` })
+        }
+        metadata.linkedApplications[projectId].issues = issues;
+        await zeitClient.setMetadata(metadata)
+      }
+    }
   } catch (err) {
     if (err.displayable) {
       errorMessage = err.message
     } else {
       throw err
-    }
-  }
-
-  if (action === 'next-page') {
-    if (page * itemsPerPage < metadata.linkedApplications[projectId].issues.length) {
-      page++;
-    }
-  }
-
-  if (action === 'prev-page') {
-    if ( page > 1) {
-      page --;
     }
   }
 
@@ -156,6 +259,8 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
     data: metadata.linkedApplications[projectId].issues,
     clientState,
     action,
+    prevLink: metadata.linkedApplications[projectId].prevLink,
+    nextLink: metadata.linkedApplications[projectId].nextLink,
   });
 
   return htm`
