@@ -5,6 +5,7 @@ const issueView = require('./issueView');
 const {
   getIssues,
   updateIssues,
+  getUsers,
 } = require('./api')
 
 const itemsPerPage = 10;
@@ -112,13 +113,36 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
           metadata.linkedApplications[projectId].organizationSlug,
           metadata.linkedApplications[projectId].projectSlug,
           issuesToResolve,
-          'resolved',
+          {status: 'resolved'},
         )
       }
       catch (err) {
         throwDisplayableError({ message: `There was an error updating issues. ${err.message}` })
       }
     }
+
+
+    if (action === 'assignTo') {
+      const issuesToAssign = [];
+      metadata.linkedApplications[projectId].issues.forEach((el) => {
+        if (clientState[el.id]) {
+          issuesToAssign.push(el.id);
+        }
+      })
+      try {
+        await updateIssues(
+          metadata.linkedApplications[projectId].envAuthToken,
+          metadata.linkedApplications[projectId].organizationSlug,
+          metadata.linkedApplications[projectId].projectSlug,
+          issuesToAssign,
+          {assignedTo: clientState.assignTo},
+        )
+      }
+      catch (err) {
+        throwDisplayableError({ message: `There was an error updating issues. ${err.message}` })
+      }
+    }
+
   } catch (err) {
     if (err.displayable) {
       errorMessage = err.message

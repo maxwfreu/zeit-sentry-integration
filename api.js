@@ -46,16 +46,29 @@ module.exports.getIssues = (authToken, organizationSlug, projectSlug) => {
   return request('GET', `/projects/${organizationSlug}/${projectSlug}/issues/`, params, options)
 }
 
-module.exports.updateIssues = (authToken, organizationSlug, projectSlug, ids, status) => {
+module.exports.getUsers = (authToken, organizationSlug, projectSlug) => {
   const options = {
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${authToken}`
     },
   }
+
   const params = {
-    status,
+    query: '',
   }
+
+  return request('GET', `/projects/${organizationSlug}/${projectSlug}/users/`, params, options)
+}
+
+module.exports.updateIssues = (authToken, organizationSlug, projectSlug, ids, params) => {
+  const options = {
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${authToken}`
+    },
+  }
+
   const idParams = ids.map((id) => `id=${id}`).join('&');
   return request('PUT', `/projects/${organizationSlug}/${projectSlug}/issues/?${idParams}`, params, options)
 }
