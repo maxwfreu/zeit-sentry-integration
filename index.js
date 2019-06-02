@@ -134,9 +134,6 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
 
     if (action === 'resolve') {
       const issuesToResolve = [];
-
-      console.log(clientState)
-
       metadata.linkedApplications[projectId].issues.forEach((el) => {
         if (clientState[el.id]) {
           issuesToResolve.push(el.id);
@@ -156,30 +153,22 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
       }
     }
 
+    if (action.indexOf('AssignTo') !== -1) {
+      const assignTo = clientState[action];
+      const [issueId, actionName] = action.split(':')
 
-    if (action === 'assignTo') {
-      const issuesToAssign = [];
-      metadata.linkedApplications[projectId].issues.forEach((el) => {
-        if (clientState[el.id]) {
-          issuesToAssign.push(el.id);
-        }
-      })
-
-      console.log(slug)
-      console.log(clientState)
-
-      // try {
-      //   await updateIssues(
-      //     metadata.linkedApplications[projectId].envAuthToken,
-      //     metadata.linkedApplications[projectId].organizationSlug,
-      //     metadata.linkedApplications[projectId].projectSlug,
-      //     issuesToAssign,
-      //     {assignedTo: clientState.assignTo},
-      //   )
-      // }
-      // catch (err) {
-      //   throwDisplayableError({ message: `There was an error updating issues. ${err.message}` })
-      // }
+      try {
+        await updateIssues(
+          metadata.linkedApplications[projectId].envAuthToken,
+          metadata.linkedApplications[projectId].organizationSlug,
+          metadata.linkedApplications[projectId].projectSlug,
+          [issueId],
+          {assignedTo: assignTo},
+        )
+      }
+      catch (err) {
+        throwDisplayableError({ message: `There was an error updating issues. ${err.message}` })
+      }
     }
 
   } catch (err) {

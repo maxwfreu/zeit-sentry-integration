@@ -75,9 +75,11 @@ module.exports = (props) => {
             </Box>
           </Box>
           ${data.map((item, index) => {
-            let assignedTo = null;
+            const assignedToId = `${item.id}:AssignTo`;
+            const action = `${item.id}:AssignTo`;
+            let assignedToValue = '';
             if (item.assignedTo) {
-              assignedTo = item.assignedTo.id
+              assignedToValue = item.assignedTo.id;
             }
 
             let inFilter = true;
@@ -105,9 +107,6 @@ module.exports = (props) => {
                 isChecked = true;
               }
               const textDecoration = item.status === 'resolved' ? 'line-through' : '';
-              console.log('assignedddTo:', assignedTo)
-
-              const assignedToName = `${item.id}AssignedTo`;
 
               return htm`
                 <Box display="flex" justifyContent="space-between" flexDirection="column" border="1px solid #eaeaea" borderRadius="5px" padding="16px" margin="8px 0">
@@ -139,7 +138,7 @@ module.exports = (props) => {
                       </Box>
 
                       <Box display="flex" justifyContent="center" alignItems="center">
-                        <Select name="${assignedToName}" value="${assignedTo}" action="assignTo">
+                        <Select name="${assignedToId}" value="${assignedToValue}" action="${action}">
                           <Option value="noone" caption="No One" />
                           ${members.map((member, index) => {
                             return htm`
