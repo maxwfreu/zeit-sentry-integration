@@ -59,11 +59,19 @@ const refreshIssues = async (clientState, metadata, projectId, zeitClient) => {
   let { issueStatusFilter, issueSortByFilter } = clientState;
 
   if (validStatusFilters.indexOf(issueStatusFilter) < 0) {
+    issueStatusFilter = metadata.linkedApplications[projectId].issueStatusFilter;
+  }
+
+  if (!issueStatusFilter) {
     issueStatusFilter = 'unresolved';
   }
 
   if (validSortByFilters.indexOf(issueSortByFilter) < 0) {
-    issueSortByFilter = 'freq';
+    issueSortByFilter = metadata.linkedApplications[projectId].issueSortByFilter;
+  }
+
+  if (!issueSortByFilter) {
+    issueSortByFilter = 'freq';   
   }
 
   try {
@@ -80,6 +88,13 @@ const refreshIssues = async (clientState, metadata, projectId, zeitClient) => {
     metadata.linkedApplications[projectId].issues = issues;
     metadata.linkedApplications[projectId].paginationLinks = resp.paginationLinks;
     metadata.linkedApplications[projectId].page = 1;
+    if (clientState.issueSortByFilter) {
+      metadata.linkedApplications[projectId].issueSortByFilter = issueSortByFilter;
+    }
+    if (clientState.issueStatusFilter) {
+      metadata.linkedApplications[projectId].issueStatusFilter = issueStatusFilter;
+    }
+
     await zeitClient.setMetadata(metadata)
   } catch (err) {
     console.log(err)
@@ -182,7 +197,11 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
         clientState.organizationSlug,
         clientState.projectSlug,
       );
-      const dsn = `https://${dsnRes[0].id}@sentry.io/${dsnRes[0].projectId}`;
+      const dsnClientKeyData = dsnRes.json[0];
+      console.log(dsnClientKeyData)
+      const dsn = `https://${dsnClientKeyData.id}@sentry.io/${dsnClientKeyData.projectId}`;
+
+      // Set DSN
       const secreteDSN = await zeitClient.ensureSecret(
         'sentry-dsn',
         dsn
@@ -191,6 +210,17 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
         payload.projectId,
         'SENTRY_DSN',
         secreteDSN
+      )
+
+      // SET project ID
+      const secreteSentryProjectID = await zeitClient.ensureSecret(
+        'sentry-project-id',
+        dsnClientKeyData.projectId.toString(),
+      )
+      await zeitClient.upsertEnv(
+        payload.projectId,
+        'SENTRY_PROJECT_ID',
+        secreteSentryProjectID
       )
 
       await refreshIssues(clientState, metadata, projectId, zeitClient)
@@ -342,6 +372,18 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
       projectId,
     });
   } else {
+
+    let issueSortByFilter = metadata.linkedApplications[projectId].issueSortByFilter;
+    if (clientState.issueSortByFilter) {
+      issueSortByFilter = clientState.issueSortByFilter;
+    }
+
+    let issueStatusFilter = metadata.linkedApplications[projectId].issueStatusFilter;
+    if (clientState.issueStatusFilter) {
+      issueStatusFilter = clientState.issueStatusFilter;
+    }
+
+    console.log(issueSortByFilter)
     View = issueView({
       page: metadata.linkedApplications[projectId].page || 1,
       itemsPerPage,
@@ -350,6 +392,8 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
       clientState,
       action,
       paginationLinks: metadata.linkedApplications[projectId].paginationLinks,
+      issueSortByFilter: issueSortByFilter || 'freq',
+      issueStatusFilter: issueStatusFilter || 'unresolved',
     });
   }
 

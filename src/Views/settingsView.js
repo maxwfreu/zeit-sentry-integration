@@ -8,10 +8,24 @@ module.exports = (props) => {
     projectId,
   } = props;
 
-  const code = `
+  const initialSnippet = `
     import * as Sentry from '@sentry/browser';
+
     Sentry.init({ dsn: process.env.SENTRY_DSN });
-    Sentry.captureException("My first error");
+  `
+
+  const usageSnippet = `
+    process.on('uncaughtException', (err) => {
+      Sentry.captureException(err);
+    });
+  `
+
+  const availableEnvVariables = `
+    process.env.SENTRY_DSN
+    process.env.SENTRY_AUTH_TOKEN
+    process.env.ORGANIZATION_SLUG
+    process.env.PROJECT_SLUG
+    process.env.PROJECT_ID
   `
 
   return htm`
@@ -26,9 +40,12 @@ module.exports = (props) => {
           <Fieldset>
             <FsContent>
               <Container>
-               ${errorMessage && htm`<Notice type="error">${errorMessage}</Notice>`}
+                ${errorMessage && htm`<Notice type="error">${errorMessage}</Notice>`}
                 <H1>Settings</H1>
-                <P>You can find your auth token at <Link href="https://sentry.io/settings/account/api/auth-tokens/" target="_blank">Sentry Auth Token</Link>. The configured keys will be availble as environment variables in your deployment as <B>SENTRY_AUTH_TOKEN</B> the next time you deploy. Additionally, <B>SENTRY_DSN</B> will be available for initializing in your application.</P>
+                <P>
+                  You can find your auth token at <Link href="https://sentry.io/settings/account/api/auth-tokens/" target="_blank">Sentry Auth Token</Link>.
+                  Please see the code snippets below for usage details.
+                </P>
                 <Input
                   label="SENTRY_AUTH_TOKEN"
                   name="envAuthToken"
@@ -48,15 +65,37 @@ module.exports = (props) => {
                   value=${metadata.linkedApplications[projectId].projectSlug || ''}
                   width="100%"
                 />
-                <H1> Enable Sentry </H1>
-                <P>To start collecting errors in sentry, insert the sentry script in your application.</P>
-                <H2> React Example: </H2>
-                <Code>${code}</Code>
               </Container>
             </FsContent>
             <FsFooter>
               <Container>
                 <Button action="${Actions.SUBMIT}">Submit Keys</Button>
+              </Container>
+            </FsFooter>
+          </Fieldset>
+          <Fieldset>
+            <FsContent>
+              <Container>
+                  <H1> Enable Sentry </H1>
+                  <P>To start collecting errors in sentry, insert the sentry script in your application.</P>
+                  <H2> Initialize Sentry: </H2>
+                  <Code>${initialSnippet}</Code>
+                  <Box marginTop="8px" />
+                  <H2> Collect Errors: </H2>
+                  <Code>${usageSnippet}</Code>
+                  <Box marginTop="8px" />
+                  <H2> Available environmental variables </H2>
+                  <Code>${availableEnvVariables}</Code>
+              </Container>
+            </FsContent>
+            <FsFooter>
+              <Container>
+                <Link href="https://github.com/maxwfreu/integrations-hackathon-example" targe="_blank">
+                  View Example
+                </Link>
+                <Link href="https://github.com/maxwfreu/zeit-sentry-integration" targe="_blank">
+                  View Source
+                </Link>
               </Container>
             </FsFooter>
           </Fieldset>

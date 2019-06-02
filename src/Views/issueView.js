@@ -29,6 +29,8 @@ module.exports = (props) => {
     action,
     members,
     paginationLinks,
+    issueSortByFilter,
+    issueStatusFilter,
   } = props;
 
   const filteredIssues = data.filter(issue => issueFilterer(issue, clientState));
@@ -39,8 +41,6 @@ module.exports = (props) => {
   if (filteredIssues.length === 0 ) {
     issueIndexes = '0';
   }
-  console.log(page)
-  console.log(paginationLinks)
 
   return htm`
     <Container>
@@ -52,14 +52,14 @@ module.exports = (props) => {
           <Box display="flex" justifyContent="space-between" padding="16px 0" alignItems="center">
             <Box display="flex" flexDirection="row" alignItems="center">
               <Box marginRight="8px">Sort By:</Box>
-              <Select name="issueSortByFilter" value="${clientState.issueSortByFilter || 'freq'}" action="${Actions.GET_ISSUES}">
+              <Select name="issueSortByFilter" value="${issueSortByFilter}" action="${Actions.GET_ISSUES}">
                 <Option value="priority" caption="Priority" />
                 <Option value="new" caption="First Seen" />
                 <Option value="date" caption="Last Seen" />
                 <Option value="freq" caption="Frequency" />
               </Select>
               <Box marginLeft="8px" marginRight="8px">Status Filter:</Box>
-              <Select name="issueStatusFilter" value="${clientState.issueStatusFilter || 'unresolved'}" action="${Actions.GET_ISSUES}">
+              <Select name="issueStatusFilter" value="${issueStatusFilter}" action="${Actions.GET_ISSUES}">
                 <Option value="unresolved" caption="Unresolved" />
                 <Option value="resolved" caption="Resolved" />
                 <Option value="all" caption="All" />
@@ -116,7 +116,7 @@ module.exports = (props) => {
             </Box>
           </Box>
           ${filteredIssues.map((item, index) => {
-            const assignedToId = `${item.id}:AssignTo`;
+            const assignedToId = `${item.id}:assign-to`;
             const assignedAction = `${item.id}:${Actions.ASSIGN_TO}`;
             let assignedToValue = '';
             if (item.assignedTo) {
@@ -130,6 +130,9 @@ module.exports = (props) => {
             }
             if (action === Actions.SELECT_ALL) {
               isChecked = true;
+            }
+            if (action === Actions.RESOLVE || action === Actions.UNRESOLVE) {
+              isChecked = false;
             }
             const textDecoration = item.status === 'resolved' ? 'line-through' : '';
 
