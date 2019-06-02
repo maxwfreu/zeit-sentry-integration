@@ -280,6 +280,12 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
       showSettings = true;
     }
 
+    if (action === Actions.CLEAR_FILTER) {
+      clientState.issueFilter = '';
+      requireSetup(metadata, projectId)
+      await refreshIssues(clientState, metadata, projectId, zeitClient)
+    }
+
     if (action === Actions.GET_ISSUES) {
       requireSetup(metadata, projectId)
       await refreshIssues(clientState, metadata, projectId, zeitClient)
@@ -404,10 +410,6 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
     } catch(err) {
       throwDisplayableError({ message: `There was an error fetching the previous page. ${err.message}` })
     }
-  }
-
-  if (action === Actions.CLEAR_FILTER) {
-    clientState.issueFilter = '';
   }
 
   if (action === Actions.SELECT_ALL || action === Actions.DESELECT_ALL) {
