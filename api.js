@@ -46,7 +46,7 @@ module.exports.getIssues = (authToken, organizationSlug, projectSlug, status='un
   return request('GET', `/projects/${organizationSlug}/${projectSlug}/issues/`, params, options)
 }
 
-module.exports.getUsers = (authToken, organizationSlug, projectSlug) => {
+module.exports.getMembers = (authToken, organizationSlug, projectSlug) => {
   const options = {
     headers: {
       'Content-Type': 'application/json',
@@ -54,11 +54,7 @@ module.exports.getUsers = (authToken, organizationSlug, projectSlug) => {
     },
   }
 
-  const params = {
-    query: '',
-  }
-
-  return request('GET', `/projects/${organizationSlug}/${projectSlug}/users/`, params, options)
+  return request('GET', `/projects/${organizationSlug}/${projectSlug}/members/`, null, options)
 }
 
 module.exports.updateIssues = (authToken, organizationSlug, projectSlug, ids, params) => {

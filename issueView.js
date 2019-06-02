@@ -8,6 +8,7 @@ module.exports = (props) => {
     data,
     clientState,
     action,
+    members,
   } = props;
 
   return htm`
@@ -74,6 +75,11 @@ module.exports = (props) => {
             </Box>
           </Box>
           ${data.map((item, index) => {
+            let assignedTo = null;
+            if (item.assignedTo) {
+              assignedTo = item.assignedTo.id
+            }
+
             let inFilter = true;
             const { issueFilter } = clientState;
             if (issueFilter) {
@@ -99,6 +105,8 @@ module.exports = (props) => {
                 isChecked = true;
               }
               const textDecoration = item.status === 'resolved' ? 'line-through' : '';
+              console.log('assignedddTo:', assignedTo)
+
               return htm`
                 <Box display="flex" justifyContent="space-between" flexDirection="column" border="1px solid #eaeaea" borderRadius="5px" padding="16px" margin="8px 0">
                   <Box display="flex" justifyContent="space-between">
@@ -130,6 +138,18 @@ module.exports = (props) => {
                       <Box width="64px" display="flex" justifyContent="center" alignItems="center">
                         ${item.userCount}
                       </Box>
+
+                      <Box width="64px" display="flex" justifyContent="center" alignItems="center">
+                        <Select name="${item.id}-assignedTo" value="${assignedTo}" action="assignTo">
+                          <Option value="noone" caption="No One" />
+                          ${members.map((member, index) => {
+                            return htm`
+                              <Option value="${member.user.id}" caption="${member.user.name}" />
+                            `
+                          })}
+                        </Select>
+                      </Box>
+
                     </Box>
                   </Box>
                 </Box>

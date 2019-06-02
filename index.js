@@ -5,7 +5,7 @@ const issueView = require('./issueView');
 const {
   getIssues,
   updateIssues,
-  getUsers,
+  getMembers,
 } = require('./api')
 
 const itemsPerPage = 10;
@@ -31,15 +31,46 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
     `
   }
 
-  // Reset state on load
-  if (action === 'view') {
-    page = 1;
-  }
-
   const metadata = await zeitClient.getMetadata()
   if (!metadata.linkedApplications) {
     metadata.linkedApplications = {}
   }
+
+  // Reset state on load
+  if (action === 'view') {
+    page = 1;
+    if (
+      metadata.linkedApplications[projectId].envAuthToken &&
+      metadata.linkedApplications[projectId].organizationSlug &&
+      metadata.linkedApplications[projectId].projectSlug
+    ) {
+      let issues
+      let members
+      try {
+        issues = await getIssues(
+          metadata.linkedApplications[projectId].envAuthToken,
+          metadata.linkedApplications[projectId].organizationSlug,
+          metadata.linkedApplications[projectId].projectSlug,
+          clientState.issueStatusFilter || 'resolved',
+        );
+
+        members = await getMembers(
+          metadata.linkedApplications[projectId].envAuthToken,
+          metadata.linkedApplications[projectId].organizationSlug,
+          metadata.linkedApplications[projectId].projectSlug,
+          clientState.issueStatusFilter || 'resolved',
+        );
+
+        // console.log('member:', members)
+      } catch (err) {
+        throwDisplayableError({ message: `There was an error fetching issues. ${err.message}` })
+      }
+      metadata.linkedApplications[projectId].issues = issues;
+      metadata.linkedApplications[projectId].members = members;
+      await zeitClient.setMetadata(metadata)
+    }
+  }
+
   if (!metadata.linkedApplications[projectId]) {
     metadata.linkedApplications[projectId] = {
       envAuthToken: '',
@@ -178,6 +209,7 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
     page,
     itemsPerPage,
     data: metadata.linkedApplications[projectId].issues,
+    members: metadata.linkedApplications[projectId].members,
     clientState,
     action,
   });
