@@ -78,7 +78,7 @@ module.exports = (props) => {
             </Box>
             <Box display="flex" flexDirection="row" marginRight="16px">
               <Box width="64px" display="flex" justifyContent="center" alignItems="center">Count</Box>
-              <Box width="64px" display="flex" justifyContent="center" alignItems="center">Assigned To</Box>
+              <Box display="flex" justifyContent="center" alignItems="center">Assigned To</Box>
             </Box>
           </Box>
           ${data.map((item, index) => {
