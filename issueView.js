@@ -21,12 +21,12 @@ module.exports = (props) => {
         <FsContent>
           <Box display="flex" justifyContent="space-between" padding="16px 0" alignItems="center">
             <Box display="flex" flexDirection="row" alignItems="center">
-              <Box marginRight="8px">Sory By:</Box>
-              <Select name="issueSortByFilter" value="${clientState.issueSortByFilter || 'firstSeen'}" action="getIssues">
+              <Box marginRight="8px">Sort By:</Box>
+              <Select name="issueSortByFilter" value="${clientState.issueSortByFilter || 'freq'}" action="getIssues">
                 <Option value="priority" caption="Priority" />
-                <Option value="firstSeen" caption="First Seen" />
-                <Option value="lastSeen" caption="Last Seen" />
-                <Option value="frequency" caption="Frequency" />
+                <Option value="new" caption="First Seen" />
+                <Option value="date" caption="Last Seen" />
+                <Option value="freq" caption="Frequency" />
               </Select>
               <Box marginLeft="8px" marginRight="8px">Status Filter:</Box>
               <Select name="issueStatusFilter" value="${clientState.issueStatusFilter || 'unresolved'}" action="getIssues">

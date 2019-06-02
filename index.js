@@ -15,6 +15,8 @@ let isMissingSettings = true;
 let showSettings = false;
 let selectAll = false;
 let paginationLinks = {}
+let issues = [];
+
 
 const throwDisplayableError = ({ message }) => {
   const error = new Error(message)
@@ -32,25 +34,53 @@ const requireSetup = (metadata, projectId) => {
   }
 }
 
+const validStatusFilters = [
+  'unresolved',
+  'resolved',
+  'all',
+];
+
+const validSortByFilters = [
+  'priority',
+  'new',
+  'date',
+  'freq',
+];
+
 const refreshIssues = async (clientState, metadata, projectId, zeitClient) => {
   if (!metadata.linkedApplications) {
     metadata.linkedApplications = {}
   }
+
+  let { issueStatusFilter, issueSortByFilter } = clientState;
+
+  if (validStatusFilters.indexOf(issueStatusFilter) < 0) {
+    issueStatusFilter = 'unresolved';
+  }
+
+  if (validSortByFilters.indexOf(issueSortByFilter) < 0) {
+    issueSortByFilter = 'freq';
+  }
+
+  console.log('issueStatusFilter: ', issueStatusFilter);
+  console.log('issueSortByFilter: ', issueSortByFilter);
 
   try {
     const resp = await getIssues(
       metadata.linkedApplications[projectId].envAuthToken,
       metadata.linkedApplications[projectId].organizationSlug,
       metadata.linkedApplications[projectId].projectSlug,
-      clientState.issueStatusFilter || 'resolved',
+      issueStatusFilter,
+      issueSortByFilter,
     );
 
     paginationLinks = resp.paginationLinks;
-    
     metadata.linkedApplications[projectId].issues = resp.issues;
     await zeitClient.setMetadata(metadata)
     return resp.issues;
+
   } catch (err) {
+    console.log(err)
     throwDisplayableError({ message: `There was an error fetching issues. ${err.message}` })
   }
 }
@@ -91,7 +121,6 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
         metadata.linkedApplications[projectId].envAuthToken,
         metadata.linkedApplications[projectId].organizationSlug,
         metadata.linkedApplications[projectId].projectSlug,
-        clientState.issueStatusFilter || 'resolved',
       );
     } catch (err) {
       throwDisplayableError({ message: `There was an error fetching issues. ${err.message}` })
@@ -135,7 +164,7 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
 
     if (action === 'resolve') {
       const issuesToResolve = [];
-      metadata.linkedApplications[projectId].issues.forEach((el) => {
+      issues.forEach((el) => {
         if (clientState[el.id]) {
           issuesToResolve.push(el.id);
         }
@@ -194,7 +223,7 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
     // await zeitClient.setMetadata(metadata)
     // return resp.issues;
 
-    if (page * itemsPerPage < metadata.linkedApplications[projectId].issues.length) {
+    if (page * itemsPerPage < issues.length) {
       page++;
     }
   }
@@ -218,7 +247,7 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
   const IssueView = issueView({
     page,
     itemsPerPage,
-    data: metadata.linkedApplications[projectId].issues,
+    data: issues,
     members: metadata.linkedApplications[projectId].members,
     clientState,
     action,
