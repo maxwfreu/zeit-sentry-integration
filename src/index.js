@@ -28,6 +28,16 @@ const throwDisplayableError = ({ message }) => {
   throw error
 }
 
+const requireClientSetup = (clientState) => {
+  if (
+    !clientState.envAuthToken ||
+    !clientState.organizationSlug ||
+    !clientState.projectSlug
+  ) {
+    throwDisplayableError({ message: 'SENTRY_AUTH_TOKEN, SENTRY_ORGANIZATION_SLUG, and SENTRY_PROJECT_SLUG must be set.' })
+  }
+}
+
 const requireSetup = (metadata, projectId) => {
   if (
     !metadata.linkedApplications[projectId].envAuthToken ||
@@ -172,6 +182,7 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
 
   try {
     if (action === Actions.SUBMIT) {
+      requireClientSetup(clientState);
       // set metadata
       metadata.linkedApplications[projectId].envAuthToken = clientState.envAuthToken
       await zeitClient.setMetadata(metadata)
@@ -391,7 +402,6 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
   if (isMissingSettings || showSettings) {
     View = settingsView({
       metadata,
-      errorMessage,
       projectId,
     });
   } else {

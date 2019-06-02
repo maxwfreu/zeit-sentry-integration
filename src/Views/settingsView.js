@@ -3,7 +3,6 @@ const { Actions } = require('../Actions');
 
 module.exports = (props) => {
   const {
-    errorMessage,
     metadata,
     projectId,
   } = props;
@@ -40,7 +39,6 @@ module.exports = (props) => {
           <Fieldset>
             <FsContent>
               <Container>
-                ${errorMessage && htm`<Notice type="error">${errorMessage}</Notice>`}
                 <H1>Settings</H1>
                 <P>
                   You can find your auth token at <Link href="https://sentry.io/settings/account/api/auth-tokens/" target="_blank">Sentry Auth Token</Link>.
