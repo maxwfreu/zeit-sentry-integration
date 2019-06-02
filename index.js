@@ -20,6 +20,37 @@ const throwDisplayableError = ({ message }) => {
   throw error
 }
 
+const requireSetup = (metadata, projectId) => {
+  if (
+    !metadata.linkedApplications[projectId].envAuthToken ||
+    !metadata.linkedApplications[projectId].organizationSlug ||
+    !metadata.linkedApplications[projectId].projectSlug
+  ) {
+    throwDisplayableError({ message: 'AUTH_TOKEN, ORGANIZATION_SLUG, and PROJECT_SLUG must be set.' })
+  }
+}
+
+const refreshIssues = async (clientState, metadata, projectId, zeitClient) => {
+  if (!metadata.linkedApplications) {
+    metadata.linkedApplications = {}
+  }
+
+  try {
+    issues = await getIssues(
+      metadata.linkedApplications[projectId].envAuthToken,
+      metadata.linkedApplications[projectId].organizationSlug,
+      metadata.linkedApplications[projectId].projectSlug,
+      clientState.issueStatusFilter || 'resolved',
+    );
+    
+    metadata.linkedApplications[projectId].issues = issues;
+    await zeitClient.setMetadata(metadata)
+    return issues;
+  } catch (err) {
+    throwDisplayableError({ message: `There was an error fetching issues. ${err.message}` })
+  }
+}
+
 module.exports = withUiHook(async ({ payload, zeitClient }) => {
   const { clientState, action, projectId, slug } = payload
   if (!projectId) {
@@ -35,42 +66,6 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
   if (!metadata.linkedApplications) {
     metadata.linkedApplications = {}
   }
-
-  // Reset state on load
-  if (action === 'view') {
-    page = 1;
-    if (
-      metadata.linkedApplications[projectId].envAuthToken &&
-      metadata.linkedApplications[projectId].organizationSlug &&
-      metadata.linkedApplications[projectId].projectSlug
-    ) {
-      let issues
-      let members
-      try {
-        issues = await getIssues(
-          metadata.linkedApplications[projectId].envAuthToken,
-          metadata.linkedApplications[projectId].organizationSlug,
-          metadata.linkedApplications[projectId].projectSlug,
-          clientState.issueStatusFilter || 'resolved',
-        );
-
-        members = await getMembers(
-          metadata.linkedApplications[projectId].envAuthToken,
-          metadata.linkedApplications[projectId].organizationSlug,
-          metadata.linkedApplications[projectId].projectSlug,
-          clientState.issueStatusFilter || 'resolved',
-        );
-
-        // console.log('member:', members)
-      } catch (err) {
-        throwDisplayableError({ message: `There was an error fetching issues. ${err.message}` })
-      }
-      metadata.linkedApplications[projectId].issues = issues;
-      metadata.linkedApplications[projectId].members = members;
-      await zeitClient.setMetadata(metadata)
-    }
-  }
-
   if (!metadata.linkedApplications[projectId]) {
     metadata.linkedApplications[projectId] = {
       envAuthToken: '',
@@ -80,6 +75,27 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
     }
   }
   let errorMessage = ''
+
+  // Reset state on load
+  if (action === 'view') {
+    page = 1;
+    requireSetup(metadata, projectId)
+    await refreshIssues(clientState, metadata, projectId, zeitClient)
+    let members
+    try {
+      members = await getMembers(
+        metadata.linkedApplications[projectId].envAuthToken,
+        metadata.linkedApplications[projectId].organizationSlug,
+        metadata.linkedApplications[projectId].projectSlug,
+        clientState.issueStatusFilter || 'resolved',
+      );
+    } catch (err) {
+      throwDisplayableError({ message: `There was an error fetching issues. ${err.message}` })
+    }
+    metadata.linkedApplications[projectId].members = members;
+    await zeitClient.setMetadata(metadata)
+  }
+
   try {
     if (action === 'submit') {
       // set metadata
@@ -109,27 +125,8 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
     }
 
     if (action === 'getIssues') {
-      if (
-        !metadata.linkedApplications[projectId].envAuthToken ||
-        !metadata.linkedApplications[projectId].organizationSlug ||
-        !metadata.linkedApplications[projectId].projectSlug
-      ) {
-        throwDisplayableError({ message: 'AUTH_TOKEN, ORGANIZATION_SLUG, and PROJECT_SLUG must be set.' })
-      }
-
-      let issues
-      try {
-        issues = await getIssues(
-          metadata.linkedApplications[projectId].envAuthToken,
-          metadata.linkedApplications[projectId].organizationSlug,
-          metadata.linkedApplications[projectId].projectSlug,
-          clientState.issueStatusFilter || 'resolved',
-        );
-      } catch (err) {
-        throwDisplayableError({ message: `There was an error fetching issues. ${err.message}` })
-      }
-      metadata.linkedApplications[projectId].issues = issues;
-      await zeitClient.setMetadata(metadata)
+      requireSetup(metadata, projectId)
+      await refreshIssues(clientState, metadata, projectId, zeitClient)
     }
 
     if (action === 'resolve') {
@@ -165,12 +162,12 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
           [issueId],
           {assignedTo: assignTo},
         )
+        await refreshIssues(clientState, metadata, projectId, zeitClient)
       }
       catch (err) {
-        throwDisplayableError({ message: `There was an error updating issues. ${err.message}` })
+        throwDisplayableError({ message: `There was an error updating issue. ${err.message}` })
       }
     }
-
   } catch (err) {
     if (err.displayable) {
       errorMessage = err.message
