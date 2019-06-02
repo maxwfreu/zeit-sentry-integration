@@ -123,8 +123,6 @@ module.exports.getIssues = async (authToken, organizationSlug, projectSlug, stat
     params.query = issueFilter;
   }
 
-  console.log(params)
-
   const result = await request('GET', `/projects/${organizationSlug}/${projectSlug}/issues/`, params, options)
   const paginationLinks = getPaginationLinks(result.response)
 

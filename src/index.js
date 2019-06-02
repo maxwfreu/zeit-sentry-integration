@@ -108,7 +108,6 @@ const refreshIssues = async (clientState, metadata, projectId, zeitClient) => {
 
     await zeitClient.setMetadata(metadata)
   } catch (err) {
-    console.log(err)
     throwDisplayableError({ message: `There was an error fetching issues. ${err.message}` })
   }
 }
@@ -162,25 +161,24 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
 
   let errorMessage = ''
 
-  // Reset state on load
-  if (action === Actions.VIEW && !isMissingSettings) {
-    requireSetup(metadata, projectId)
-    await refreshIssues(clientState, metadata, projectId, zeitClient)
-    let members
-    try {
-      members = await getMembers(
-        metadata.linkedApplications[projectId].envAuthToken,
-        metadata.linkedApplications[projectId].organizationSlug,
-        metadata.linkedApplications[projectId].projectSlug,
-      );
-    } catch (err) {
-      throwDisplayableError({ message: `There was an error fetching issues. ${err.message}` })
-    }
-    metadata.linkedApplications[projectId].members = members;
-    await zeitClient.setMetadata(metadata)
-  }
-
   try {
+    // Reset state on load
+    if (action === Actions.VIEW && !isMissingSettings) {
+      let members
+      try {
+        requireSetup(metadata, projectId)
+        await refreshIssues(clientState, metadata, projectId, zeitClient)
+        members = await getMembers(
+          metadata.linkedApplications[projectId].envAuthToken,
+          metadata.linkedApplications[projectId].organizationSlug,
+          metadata.linkedApplications[projectId].projectSlug,
+        );
+        metadata.linkedApplications[projectId].members = members;
+        await zeitClient.setMetadata(metadata)
+      } catch (err) {
+        throwDisplayableError({ message: `There was an error fetching issues. ${err.message}` })
+      }
+    }
     if (action === Actions.SUBMIT) {
       requireClientSetup(clientState);
       // set metadata
@@ -203,61 +201,71 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
       await zeitClient.setMetadata(metadata)
 
       showSettings = false;
+      let dsnRes;
+      try {
+        dsnRes = await getDSN(
+          clientState.envAuthToken,
+          clientState.organizationSlug,
+          clientState.projectSlug,
+        );
+        const dsnClientKeyData = dsnRes.json[0];
 
-      const dsnRes = await getDSN(
-        clientState.envAuthToken,
-        clientState.organizationSlug,
-        clientState.projectSlug,
-      );
-      const dsnClientKeyData = dsnRes.json[0];
+        const dsn = `https://${dsnClientKeyData.id}@sentry.io/${dsnClientKeyData.projectId}`;
 
-      const dsn = `https://${dsnClientKeyData.id}@sentry.io/${dsnClientKeyData.projectId}`;
+        // Set DSN
+        const secreteDSN = await zeitClient.ensureSecret(
+          'sentry-dsn',
+          dsn
+        )
+        await zeitClient.upsertEnv(
+          payload.projectId,
+          'SENTRY_DSN',
+          secreteDSN
+        )
 
-      // Set DSN
-      const secreteDSN = await zeitClient.ensureSecret(
-        'sentry-dsn',
-        dsn
-      )
-      await zeitClient.upsertEnv(
-        payload.projectId,
-        'SENTRY_DSN',
-        secreteDSN
-      )
+        // SET project ID
+        const secreteSentryProjectID = await zeitClient.ensureSecret(
+          'sentry-project-id',
+          dsnClientKeyData.projectId.toString(),
+        )
+        await zeitClient.upsertEnv(
+          payload.projectId,
+          'SENTRY_PROJECT_ID',
+          secreteSentryProjectID
+        )
 
-      // SET project ID
-      const secreteSentryProjectID = await zeitClient.ensureSecret(
-        'sentry-project-id',
-        dsnClientKeyData.projectId.toString(),
-      )
-      await zeitClient.upsertEnv(
-        payload.projectId,
-        'SENTRY_PROJECT_ID',
-        secreteSentryProjectID
-      )
+        // SET project slug
+        const secreteSentryProjectSlug = await zeitClient.ensureSecret(
+          'sentry-project-slug',
+          clientState.projectSlug.toString(),
+        )
+        await zeitClient.upsertEnv(
+          payload.projectId,
+          'SENTRY_PROJECT_SLUG',
+          secreteSentryProjectSlug
+        )
 
-      // SET project slug
-      const secreteSentryProjectSlug = await zeitClient.ensureSecret(
-        'sentry-project-slug',
-        clientState.projectSlug.toString(),
-      )
-      await zeitClient.upsertEnv(
-        payload.projectId,
-        'SENTRY_PROJECT_SLUG',
-        secreteSentryProjectSlug
-      )
-
-      // SET organization slug
-      const secreteSentryOrgSlug = await zeitClient.ensureSecret(
-        'sentry-project-slug',
-        clientState.organizationSlug.toString(),
-      )
-      await zeitClient.upsertEnv(
-        payload.projectId,
-        'SENTRY_ORGANIZATION_SLUG',
-        secreteSentryOrgSlug
-      )
-
-      await refreshIssues(clientState, metadata, projectId, zeitClient)
+        // SET organization slug
+        const secreteSentryOrgSlug = await zeitClient.ensureSecret(
+          'sentry-project-slug',
+          clientState.organizationSlug.toString(),
+        )
+        await zeitClient.upsertEnv(
+          payload.projectId,
+          'SENTRY_ORGANIZATION_SLUG',
+          secreteSentryOrgSlug
+        )
+      } catch (err) {
+        showSettings = true;
+        throwDisplayableError({ message: `Error connecting to Sentry. Please double check credentials. Error: ${err.message}` })
+      }
+      if (dsnRes) {
+        try {
+          await refreshIssues(clientState, metadata, projectId, zeitClient)
+        } catch (err) {
+          throwDisplayableError({ message: `There was an error fetching issues. ${err.message}` })
+        }
+      }
     }
 
     if (action == Actions.SHOW_SETTINGS) {
