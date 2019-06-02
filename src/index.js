@@ -17,11 +17,8 @@ const {
 const { Actions } = require('./Actions');
 
 const itemsPerPage = 10;
-let page = 1;
 let isMissingSettings = true;
 let showSettings = false;
-let selectAll = false;
-let paginationLinks = {}
 let issues = [];
 
 
@@ -77,12 +74,32 @@ const refreshIssues = async (clientState, metadata, projectId, zeitClient) => {
       issueStatusFilter,
       issueSortByFilter,
     );
-
-    paginationLinks = resp.paginationLinks;
     issues = resp.issues;
 
+    // Cache issues for actions that don't refresh
+    metadata.linkedApplications[projectId].issues = issues;
+    metadata.linkedApplications[projectId].paginationLinks = resp.paginationLinks;
+    metadata.linkedApplications[projectId].page = 1;
+    await zeitClient.setMetadata(metadata)
   } catch (err) {
     console.log(err)
+    throwDisplayableError({ message: `There was an error fetching issues. ${err.message}` })
+  }
+}
+
+const refreshIssuesForPagination = async (metadata, projectId, zeitClient, link, page) => {
+  try {
+    const resp = await getIssuesFromPaginationLink(
+      metadata.linkedApplications[projectId].envAuthToken,
+      link,
+    );
+    issues = resp.issues;
+
+    metadata.linkedApplications[projectId].issues = issues;
+    metadata.linkedApplications[projectId].paginationLinks = resp.paginationLinks;
+    metadata.linkedApplications[projectId].page = page;
+    await zeitClient.setMetadata(metadata)
+  } catch (err) {
     throwDisplayableError({ message: `There was an error fetching issues. ${err.message}` })
   }
 }
@@ -121,7 +138,6 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
 
   // Reset state on load
   if (action === Actions.VIEW && !isMissingSettings) {
-    page = 1;
     requireSetup(metadata, projectId)
     await refreshIssues(clientState, metadata, projectId, zeitClient)
     let members
@@ -204,6 +220,29 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
           issuesToResolve,
           {status: 'resolved'},
         )
+        await refreshIssues(clientState, metadata, projectId, zeitClient)
+      }
+      catch (err) {
+        throwDisplayableError({ message: `There was an error updating issues. ${err.message}` })
+      }
+    }
+
+    if (action === Actions.UNRESOLVE) {
+      const issuesToResolve = [];
+      issues.forEach((el) => {
+        if (clientState[el.id]) {
+          issuesToResolve.push(el.id);
+        }
+      })
+      try {
+        await updateIssues(
+          metadata.linkedApplications[projectId].envAuthToken,
+          metadata.linkedApplications[projectId].organizationSlug,
+          metadata.linkedApplications[projectId].projectSlug,
+          issuesToResolve,
+          {status: 'unresolved'},
+        )
+        await refreshIssues(clientState, metadata, projectId, zeitClient)
       }
       catch (err) {
         throwDisplayableError({ message: `There was an error updating issues. ${err.message}` })
@@ -237,29 +276,62 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
   }
 
   if (action === Actions.NEXT_PAGE) {
-    const resp = await getIssuesFromPaginationLink(
-      metadata.linkedApplications[projectId].envAuthToken,
-      paginationLinks.nextLink,
-    );
-
-    paginationLinks = resp.paginationLinks;
-    issues = resp.issues;
-    page++;
+    const { paginationLinks, page } = metadata.linkedApplications[projectId];
+    let link;
+    if (paginationLinks) {
+      link = paginationLinks.nextLink;
+    }
+    let curPage = page;
+    if (!curPage) {
+      curPage = 1;
+    } else {
+      curPage++;
+    }
+    console.log('go go page: ', curPage)
+    try {
+      await refreshIssuesForPagination(
+        metadata,
+        projectId,
+        zeitClient,
+        link,
+        curPage,
+      )
+    } catch(err) {
+      throwDisplayableError({ message: `There was an error fetching the next page. ${err.message}` })
+    }
   }
 
   if (action === Actions.PREV_PAGE) {
-    const resp = await getIssuesFromPaginationLink(
-      metadata.linkedApplications[projectId].envAuthToken,
-      paginationLinks.prevLink,
-    );
-
-    paginationLinks = resp.paginationLinks;
-    issues = resp.issues;
-    page--;
+    const { paginationLinks, page } = metadata.linkedApplications[projectId];
+    let link;
+    if (paginationLinks) {
+      link = paginationLinks.prevLink;
+    }
+    let curPage = page;
+    if (!curPage) {
+      curPage = 1;
+    } else {
+      Math.max(curPage--, 1);
+    }
+    try {
+      await refreshIssuesForPagination(
+        metadata,
+        projectId,
+        zeitClient,
+        link,
+        curPage,
+      )
+    } catch(err) {
+      throwDisplayableError({ message: `There was an error fetching the previous page. ${err.message}` })
+    }
   }
 
   if (action === Actions.CLEAR_FILTER) {
     clientState.issueFilter = '';
+  }
+
+  if (action === Actions.SELECT_ALL || action === Actions.DESELECT_ALL) {
+    issues = metadata.linkedApplications[projectId].issues;
   }
 
   let View;
@@ -271,13 +343,13 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
     });
   } else {
     View = issueView({
-      page,
+      page: metadata.linkedApplications[projectId].page || 1,
       itemsPerPage,
       data: issues,
       members: metadata.linkedApplications[projectId].members,
       clientState,
       action,
-      paginationLinks,
+      paginationLinks: metadata.linkedApplications[projectId].paginationLinks,
     });
   }
 
