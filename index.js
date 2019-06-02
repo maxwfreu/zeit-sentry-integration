@@ -31,12 +31,34 @@ const requireSetup = (metadata, projectId) => {
   }
 }
 
+const validStatusFilters = [
+  'unresolved',
+  'resolved',
+  'all',
+];
+
+const validSortByFilters = [
+  'priority',
+  'new',
+  'date',
+  'freq',
+];
+
 const refreshIssues = async (clientState, metadata, projectId, zeitClient) => {
   if (!metadata.linkedApplications) {
     metadata.linkedApplications = {}
   }
 
-  const { issueStatusFilter, issueSortByFilter } = clientState;
+  let { issueStatusFilter, issueSortByFilter } = clientState;
+
+  if (validStatusFilters.indexOf(issueStatusFilter) < 0) {
+    issueStatusFilter = 'unresolved';
+  }
+
+  if (validSortByFilters.indexOf(issueSortByFilter) < 0) {
+    issueSortByFilter = 'freq';
+  }
+
   console.log('issueStatusFilter: ', issueStatusFilter);
   console.log('issueSortByFilter: ', issueSortByFilter);
 
@@ -45,10 +67,9 @@ const refreshIssues = async (clientState, metadata, projectId, zeitClient) => {
       metadata.linkedApplications[projectId].envAuthToken,
       metadata.linkedApplications[projectId].organizationSlug,
       metadata.linkedApplications[projectId].projectSlug,
-      issueStatusFilter || 'unresolved',
-      issueSortByFilter || 'freq',
+      issueStatusFilter,
+      issueSortByFilter,
     );
-    // return issues;
   } catch (err) {
     console.log(err)
     throwDisplayableError({ message: `There was an error fetching issues. ${err.message}` })
