@@ -116,7 +116,7 @@ module.exports = (props) => {
       })}
       <Box display="flex" justifyContent="space-between">
         <Box>
-          Page: ${page} / ${Math.ceil(data.length / itemsPerPage)}
+          Page: ${page} / ${Math.max(Math.ceil(data.length / itemsPerPage), 1)}
         </Box>
         <Box>
           <Button action="prev-page" disabled="${page === 1}">prev</Button>
