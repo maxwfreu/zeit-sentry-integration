@@ -2,10 +2,13 @@ const { withUiHook, htm } = require('@zeit/integration-utils')
 const moment = require('moment');
 const { promisify } = require('util')
 const issueView = require('./issueView');
+const settingsView = require('./settingsView');
+
 const {
   getIssues,
   updateIssues,
   getMembers,
+  getDSN,
 } = require('./api')
 
 const itemsPerPage = 10;
@@ -142,6 +145,21 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
       await zeitClient.setMetadata(metadata)
 
       showSettings = false;
+
+      const dsnRes = await getDSN(
+        metadata.linkedApplications[projectId].envAuthToken,
+        metadata.linkedApplications[projectId].organizationSlug,
+        metadata.linkedApplications[projectId].projectSlug,
+      );
+      const dsn = `https://${dsnRes[0].id}@sentry.io/${dsnRes[0].projectId}`;
+
+      await zeitClient.upsertEnv(
+        payload.projectId,
+        'SENTRY_DSN',
+        dsn
+      )
+
+      await refreshIssues(clientState, metadata, projectId, zeitClient)
     }
 
     if (action == 'showSettings') {
@@ -222,65 +240,28 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
     clientState.issueFilter = '';
   }
 
-  const IssueView = issueView({
-    page,
-    itemsPerPage,
-    data: issues,
-    members: metadata.linkedApplications[projectId].members,
-    clientState,
-    action,
-  });
+  let View;
+  if (isMissingSettings || showSettings) {
+    View = settingsView({
+      metadata,
+      errorMessage,
+      projectId,
+    });
+  } else {
+    View = issueView({
+      page,
+      itemsPerPage,
+      data: issues,
+      members: metadata.linkedApplications[projectId].members,
+      clientState,
+      action,
+    });
+  }
 
   return htm`
     <Page>
-        ${(isMissingSettings || showSettings) ?
-          htm`
-            <Box>
-              <Box marginBottom="10px" textAlign="right">
-                <ProjectSwitcher />
-              </Box>
-              <Box display="flex" justifyContent="center" margin-bottom="2rem">
-                <Img src="https://sentry-brand.storage.googleapis.com/sentry-logo-black.png" />
-              </Box>
-              <Container>
-               ${errorMessage && htm`<Notice type="error">${errorMessage}</Notice>`}
-                <H1>Settings</H1>
-                <P>You can find your auth token at <Link href="https://sentry.io/settings/account/api/auth-tokens/" target="_blank">Sentry Auth Token</Link>. The configured keys will be availble as environment variables in your deployment as <B>AUTH_TOKEN</B> the next time you deploy.</P>
-                <Input
-                  label="AUTH_TOKEN"
-                  name="envAuthToken"
-                  value=${metadata.linkedApplications[projectId].envAuthToken}
-                  type="password"
-                  width="100%"
-                />
-               <Input
-                  label="ORGANIZATION_SLUG"
-                  name="organizationSlug"
-                  value=${metadata.linkedApplications[projectId].organizationSlug || ''}
-                  width="100%"
-                />
-               <Input
-                  label="PROJECT_SLUG"
-                  name="projectSlug"
-                  value=${metadata.linkedApplications[projectId].projectSlug || ''}
-                  width="100%"
-                />
-              </Container>
-              <Container>
-                <Button action="submit">Submit Keys</Button>
-              </Container>
-            </Box>
-          `:
-          htm`
-            <Box>
-              ${errorMessage && htm`<Notice type="error">${errorMessage}</Notice>`}
-              <Container>
-                <Button action="showSettings">Update Settings</Button>
-              </Container>
-              ${IssueView}
-            </Box>
-          `
-        }
+      ${errorMessage && htm`<Notice type="error">${errorMessage}</Notice>`}
+      ${View}
     </Page>
   `
 });

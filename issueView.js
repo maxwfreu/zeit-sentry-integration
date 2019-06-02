@@ -13,6 +13,9 @@ module.exports = (props) => {
 
   return htm`
     <Container>
+      <Button action="showSettings">Update Settings</Button>
+    </Container>
+    <Container>
       <Fieldset>
         <FsContent>
           <Box display="flex" justifyContent="space-between" padding="16px 0" alignItems="center">

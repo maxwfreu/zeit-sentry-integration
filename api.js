@@ -36,6 +36,17 @@ const request = (method, path = '', params = null, options = null) => {
   return fetchRequest(url.href, allOptions);
 }
 
+module.exports.getDSN = (authToken, organizationSlug, projectSlug) => {
+  const options = {
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${authToken}`
+    },
+  }
+
+  return request('GET', `/projects/${organizationSlug}/${projectSlug}/keys/`, null, options) 
+}
+
 module.exports.getIssues = (authToken, organizationSlug, projectSlug, status='unresolved', sort='freq') => {
   const options = {
     headers: {
