@@ -107,6 +107,8 @@ module.exports = (props) => {
               const textDecoration = item.status === 'resolved' ? 'line-through' : '';
               console.log('assignedddTo:', assignedTo)
 
+              const assignedToName = `${item.id}AssignedTo`;
+
               return htm`
                 <Box display="flex" justifyContent="space-between" flexDirection="column" border="1px solid #eaeaea" borderRadius="5px" padding="16px" margin="8px 0">
                   <Box display="flex" justifyContent="space-between">
@@ -137,7 +139,7 @@ module.exports = (props) => {
                       </Box>
 
                       <Box display="flex" justifyContent="center" alignItems="center">
-                        <Select name="${item.id}-assignedTo" value="${assignedTo}" action="assignTo">
+                        <Select name="${assignedToName}" value="${assignedTo}" action="assignTo">
                           <Option value="noone" caption="No One" />
                           ${members.map((member, index) => {
                             return htm`
