@@ -1,15 +1,19 @@
 const { withUiHook, htm } = require('@zeit/integration-utils')
 const moment = require('moment');
-const { promisify } = require('util')
-const issueView = require('./issueView');
-const settingsView = require('./settingsView');
+const { promisify } = require('util');
+const {
+  issueView,
+  settingsView,
+} = require('./Views');
 
 const {
   getIssues,
   updateIssues,
   getMembers,
   getDSN,
-} = require('./api')
+} = require('./api');
+
+const { Actions } = require('./Actions');
 
 const itemsPerPage = 10;
 let page = 1;
@@ -112,7 +116,7 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
   let errorMessage = ''
 
   // Reset state on load
-  if (action === 'view' && !isMissingSettings) {
+  if (action === Actions.VIEW && !isMissingSettings) {
     page = 1;
     requireSetup(metadata, projectId)
     await refreshIssues(clientState, metadata, projectId, zeitClient)
@@ -131,7 +135,7 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
   }
 
   try {
-    if (action === 'submit') {
+    if (action === Actions.SUBMIT) {
       // set metadata
       metadata.linkedApplications[projectId].envAuthToken = clientState.envAuthToken
       await zeitClient.setMetadata(metadata)
@@ -172,16 +176,16 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
       await refreshIssues(clientState, metadata, projectId, zeitClient)
     }
 
-    if (action == 'showSettings') {
+    if (action == Actions.SHOW_SETTINGS) {
       showSettings = true;
     }
 
-    if (action === 'getIssues') {
+    if (action === Actions.GET_ISSUES) {
       requireSetup(metadata, projectId)
       await refreshIssues(clientState, metadata, projectId, zeitClient)
     }
 
-    if (action === 'resolve') {
+    if (action === Actions.RESOLVE) {
       const issuesToResolve = [];
       issues.forEach((el) => {
         if (clientState[el.id]) {
@@ -202,7 +206,7 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
       }
     }
 
-    if (action.indexOf('AssignTo') !== -1) {
+    if (action.indexOf(Actions.ASSIGN_TO) !== -1) {
       const assignTo = clientState[action];
       const [issueId, actionName] = action.split(':')
 
@@ -228,19 +232,19 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
     }
   }
 
-  if (action === 'next-page') {
+  if (action === Actions.NEXT_PAGE) {
     if (page * itemsPerPage < issues.length) {
       page++;
     }
   }
 
-  if (action === 'prev-page') {
+  if (action === Actions.PREV_PAGE) {
     if ( page > 1) {
       page --;
     }
   }
 
-  if (action === 'clear-filter') {
+  if (action === Actions.CLEAR_FILTER) {
     clientState.issueFilter = '';
   }
 

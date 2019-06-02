@@ -1,4 +1,5 @@
 const { htm } = require('@zeit/integration-utils');
+const { Actions } = require('../Actions');
 
 module.exports = (props) => {
   const {
@@ -55,7 +56,7 @@ module.exports = (props) => {
             </FsContent>
             <FsFooter>
               <Container>
-                <Button action="submit">Submit Keys</Button>
+                <Button action="${Actions.SUBMIT}">Submit Keys</Button>
               </Container>
             </FsFooter>
           </Fieldset>

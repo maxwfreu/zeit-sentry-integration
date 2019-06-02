@@ -15,14 +15,9 @@ const fetchRequest = async (url, options = null) => {
 
 const request = (method, path = '', params = null, options = null) => {
   const url = new URL(`https://sentry.io/api/0${path}`)
-  console.log("MAKE REQUEST")
-  // let allOptions = {
-  //   cache: 'no-cache',
-  //   ...options
-  // };
+
   if (method === 'GET') {
     url.search = new URLSearchParams(params)
-    console.log(url.href)
     return fetchRequest(url.href, options)
   }
 

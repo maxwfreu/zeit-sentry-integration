@@ -1,5 +1,6 @@
 {
   "name": "zeit-newrelic-integration",
   "version": 2,
-  "builds": [{ "src": "index.js", "use": "@now/node" }]
+  "builds": [{ "src": "./src/index.js", "use": "@now/node" }],
+  "routes": [{ "src": "/", "dest": "/src/index.js" }]
 }

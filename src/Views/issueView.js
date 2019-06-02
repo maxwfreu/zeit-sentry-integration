@@ -1,5 +1,6 @@
 const {withUiHook, htm} = require('@zeit/integration-utils');
-var moment = require('moment');
+const moment = require('moment');
+const { Actions } = require('../Actions');
 
 module.exports = (props) => {
   const {
@@ -13,7 +14,7 @@ module.exports = (props) => {
 
   return htm`
     <Container>
-      <Button action="showSettings">Update Settings</Button>
+      <Button action="${Actions.SHOW_SETTINGS}">Update Settings</Button>
     </Container>
     <Container>
       <Fieldset>
@@ -21,14 +22,14 @@ module.exports = (props) => {
           <Box display="flex" justifyContent="space-between" padding="16px 0" alignItems="center">
             <Box display="flex" flexDirection="row" alignItems="center">
               <Box marginRight="8px">Sort By:</Box>
-              <Select name="issueSortByFilter" value="${clientState.issueSortByFilter || 'freq'}" action="getIssues">
+              <Select name="issueSortByFilter" value="${clientState.issueSortByFilter || 'freq'}" action="${Actions.GET_ISSUES}">
                 <Option value="priority" caption="Priority" />
                 <Option value="new" caption="First Seen" />
                 <Option value="date" caption="Last Seen" />
                 <Option value="freq" caption="Frequency" />
               </Select>
               <Box marginLeft="8px" marginRight="8px">Status Filter:</Box>
-              <Select name="issueStatusFilter" value="${clientState.issueStatusFilter || 'unresolved'}" action="getIssues">
+              <Select name="issueStatusFilter" value="${clientState.issueStatusFilter || 'unresolved'}" action="${Actions.GET_ISSUES}">
                 <Option value="unresolved" caption="Unresolved" />
                 <Option value="resolved" caption="Resolved" />
                 <Option value="all" caption="All" />
@@ -44,7 +45,7 @@ module.exports = (props) => {
               </Box>
               ${clientState.issueFilter ? htm`
                 <Box display="flex" alignItems="center">
-                  <Button action="clear-filter" secondary small>Clear</Button>
+                  <Button action="${Actions.CLEAR_FILTER}" secondary small>Clear</Button>
                 </Box>
               ` : ""}
             </Box>
@@ -59,23 +60,23 @@ module.exports = (props) => {
                 <H1> Errors (${data.length})</H1>
               </Box>
             </Box>
-            <Button action="getIssues" small>Refresh</Button>
+            <Button action="${Actions.GET_ISSUES}" small>Refresh</Button>
           </Box>
           <Box display="flex" justifyContent="space-between" alignItems="center">
             <Box display="flex" flexDirection="row" alignItems="center">
               <Box marginRight="8px">
-                <Button action="resolve" small secondary>Resolve Selected</Button>
+                <Button action="${Actions.RESOLVE}" small secondary>Resolve Selected</Button>
               </Box>
               <Box marginRight="8px">
-                <Button action="unresolve" small secondary>Unresolve Selected</Button>
+                <Button action="${Actions.UNRESOLVE}" small secondary>Unresolve Selected</Button>
               </Box>
               <Box marginRight="8px">
                 <Button
-                  action="${action === 'select-all' ? 'deselect-all': 'select-all'}"
+                  action="${action === Actions.SELECT_ALL ? Actions.DESELECT_ALL: Actions.SELECT_ALL}"
                   secondary
                   small
                 >
-                   ${action === 'select-all' ? 'Deselect All': 'Select All'}
+                   ${action === Actions.SELECT_ALL ? 'Deselect All': 'Select All'}
                 </Button>
               </Box>
             </Box>
@@ -86,7 +87,7 @@ module.exports = (props) => {
           </Box>
           ${data.map((item, index) => {
             const assignedToId = `${item.id}:AssignTo`;
-            const assignedAction = `${item.id}:AssignTo`;
+            const assignedAction = `${item.id}:${Actions.ASSIGN_TO}`;
             let assignedToValue = '';
             if (item.assignedTo) {
               assignedToValue = item.assignedTo.id;
@@ -110,10 +111,10 @@ module.exports = (props) => {
               const imgURL = `https://s1.sentry-cdn.com/_static/df7081b5c6bb784faeea5116bd62b398/sentry/dist/${item.project.slug}.svg`
               const lastSeen = moment(item.lastSeen).fromNow();
               let isChecked = clientState[item.id] === true;
-              if (action === 'getIssues' || action === 'deselect-all') {
+              if (action === Actions.GET_ISSUES || action === Actions.DESELECT_ALL) {
                 isChecked = false;
               }
-              if (action === 'select-all') {
+              if (action === Actions.SELECT_ALL) {
                 isChecked = true;
               }
               const textDecoration = item.status === 'resolved' ? 'line-through' : '';
@@ -172,8 +173,8 @@ module.exports = (props) => {
               Page: ${page} / ${Math.max(Math.ceil(data.length / itemsPerPage), 1)}
             </Box>
             <Box>
-              <Button action="prev-page" disabled="${page === 1}">prev</Button>
-              <Button action="next-page" disabled="${page * itemsPerPage >= data.length}">next</Button>
+              <Button action="${Actions.PREV_PAGE}" disabled="${page === 1}">prev</Button>
+              <Button action="${Actions.NEXT_PAGE}" disabled="${page * itemsPerPage >= data.length}">next</Button>
             </Box>
           </Box>
         </FsFooter>
