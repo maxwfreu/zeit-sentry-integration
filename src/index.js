@@ -223,6 +223,28 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
         secreteSentryProjectID
       )
 
+      // SET project slug
+      const secreteSentryProjectSlug = await zeitClient.ensureSecret(
+        'sentry-project-slug',
+        clientState.projectSlug.toString(),
+      )
+      await zeitClient.upsertEnv(
+        payload.projectId,
+        'SENTRY_PROJECT_SLUG',
+        secreteSentryProjectSlug
+      )
+
+      // SET organization slug
+      const secreteSentryOrgSlug = await zeitClient.ensureSecret(
+        'sentry-project-slug',
+        clientState.organizationSlug.toString(),
+      )
+      await zeitClient.upsertEnv(
+        payload.projectId,
+        'SENTRY_ORGANIZATION_SLUG',
+        secreteSentryOrgSlug
+      )
+
       await refreshIssues(clientState, metadata, projectId, zeitClient)
     }
 
