@@ -24,7 +24,6 @@ const fetchRequest = async (url, options = null) => {
 
 const request = (method, path = '', params = null, options = null) => {
   const url = new URL(`https://sentry.io/api/0${path}`)
-  console.log("MAKE REQUEST", url.href)
   let allOptions = {
     cache: 'no-cache',
     ...options
@@ -72,11 +71,6 @@ const getHeaders = (authToken) => {
 }
 
 const getPaginationLinks = (res) => {
-  // console.log('headers:', res.headers)
-
-  // console.log('Link:', res.headers.get('Link'))
-  // console.log('link:', res.headers.get('link'))
-
   const linkHeaders = res.headers.get('Link');
   if (!linkHeaders) {
     return {
@@ -86,13 +80,10 @@ const getPaginationLinks = (res) => {
   }
   linkHeadersArr = linkHeaders.split(',');
 
-  console.log('linkHeadersArr:', linkHeadersArr)
-
   const prevArr = linkHeadersArr[0].split(';');
   const nextarr = linkHeadersArr[1].split(';');
 
   const prev = prevArr[0].trim()
-  // console.log(prevArr)
   const needsPrevLink = prevArr[2].indexOf('results="true"') > -1;
   if (needsPrevLink) {
     prevLink = prev.substr(1, prev.length - 2);
@@ -118,13 +109,11 @@ module.exports.getIssues = async (authToken, organizationSlug, projectSlug, stat
     limit: '10'
   }
 
-  const r = await request('GET', `/projects/${organizationSlug}/${projectSlug}/issues/`, params, options)
-
-  const paginationLinks = getPaginationLinks(r.response)
-  // console.log('paginationLinks:', paginationLinks)
+  const result = await request('GET', `/projects/${organizationSlug}/${projectSlug}/issues/`, params, options)
+  const paginationLinks = getPaginationLinks(result.response)
 
   return {
-    issues: r.json,
+    issues: result.json,
     paginationLinks: paginationLinks,
   }
 }
@@ -132,31 +121,24 @@ module.exports.getIssues = async (authToken, organizationSlug, projectSlug, stat
 module.exports.getIssuesFromPaginationLink = async (authToken, link) => {
   const options = getHeaders(authToken);
 
-  console.log('link:', link)
   const r = await request('GET', link.replace('https://sentry.io/api/0', ''), null, options)
-  
-
-
-  const paginationLinks = getPaginationLinks(r.response)
-
-  // console.log('getIssuesFromPaginationLink:', r.json)  
-  // console.log('getIssuesFromPaginationLink paginationLinks:', paginationLinks)
+  const paginationLinks = getPaginationLinks(result.response)
 
   return {
-    issues: r.json,
+    issues: result.json,
     paginationLinks: paginationLinks,
   }
 }
 
 module.exports.getMembers = async (authToken, organizationSlug, projectSlug) => {
   const options = getHeaders(authToken);
-  const r = await request('GET', `/projects/${organizationSlug}/${projectSlug}/members/`, null, options)
-  return r.json
+  const result = await request('GET', `/projects/${organizationSlug}/${projectSlug}/members/`, null, options)
+  return result.json
 }
 
 module.exports.updateIssues = async (authToken, organizationSlug, projectSlug, ids, params) => {
   const options = getHeaders(authToken);
   const idParams = ids.map((id) => `id=${id}`).join('&');
-  const r = await request('PUT', `/projects/${organizationSlug}/${projectSlug}/issues/?${idParams}`, params, options)
-  return r.json
+  const result = await request('PUT', `/projects/${organizationSlug}/${projectSlug}/issues/?${idParams}`, params, options)
+  return result.json
 }

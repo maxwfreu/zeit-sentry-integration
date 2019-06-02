@@ -154,7 +154,7 @@ module.exports = (props) => {
 
                       <Box display="flex" justifyContent="center" alignItems="center">
                         <Select name="${assignedToId}" value="${assignedToValue}" action="${assignedAction}">
-                          <Option value="noone" caption="No One" />
+                          <Option value="" caption="No One" />
                           ${members.map((member, index) => {
                             return htm`
                               <Option value="${member.user.id}" caption="${member.user.name}" />
