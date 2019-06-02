@@ -38,7 +38,6 @@ module.exports.getIssues = (authToken, organizationSlug, projectSlug, status='un
       'Authorization': `Bearer ${authToken}`
     },
   }
-  console.log(status)
   const params = {
     query: status === 'all' ? '' : `is:${status}`,
   }
