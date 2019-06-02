@@ -121,7 +121,7 @@ module.exports.getIssues = async (authToken, organizationSlug, projectSlug, stat
 module.exports.getIssuesFromPaginationLink = async (authToken, link) => {
   const options = getHeaders(authToken);
 
-  const r = await request('GET', link.replace('https://sentry.io/api/0', ''), null, options)
+  const result = await request('GET', link.replace('https://sentry.io/api/0', ''), null, options)
   const paginationLinks = getPaginationLinks(result.response)
 
   return {
