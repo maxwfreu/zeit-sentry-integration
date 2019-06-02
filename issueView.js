@@ -13,7 +13,7 @@ module.exports = (props) => {
   } = props;
 
   console.log('-----')
-  console.log(paginationLinks)
+  console.log(data.length)
 
   return htm`
     <Container>
@@ -107,7 +107,8 @@ module.exports = (props) => {
                 inFilter = true;
               }
             }
-            if (page === Math.ceil((index + 1)/itemsPerPage) && inFilter) {
+            // if (page === Math.ceil((index + 1)/itemsPerPage) && inFilter) {
+            if (inFilter) {
               const imgURL = `https://s1.sentry-cdn.com/_static/df7081b5c6bb784faeea5116bd62b398/sentry/dist/${item.project.slug}.svg`
               const lastSeen = moment(item.lastSeen).fromNow();
               let isChecked = clientState[item.id] === true;

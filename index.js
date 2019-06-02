@@ -62,8 +62,8 @@ const refreshIssues = async (clientState, metadata, projectId, zeitClient) => {
     issueSortByFilter = 'freq';
   }
 
-  console.log('issueStatusFilter: ', issueStatusFilter);
-  console.log('issueSortByFilter: ', issueSortByFilter);
+  // console.log('issueStatusFilter: ', issueStatusFilter);
+  // console.log('issueSortByFilter: ', issueSortByFilter);
 
   try {
     const resp = await getIssues(
@@ -75,9 +75,10 @@ const refreshIssues = async (clientState, metadata, projectId, zeitClient) => {
     );
 
     paginationLinks = resp.paginationLinks;
-    metadata.linkedApplications[projectId].issues = resp.issues;
-    await zeitClient.setMetadata(metadata)
-    return resp.issues;
+    console.log('refreshIssues:', paginationLinks)
+    // metadata.linkedApplications[projectId].issues = resp.issues;
+    // await zeitClient.setMetadata(metadata)
+    issues = resp.issues;
 
   } catch (err) {
     console.log(err)
@@ -112,6 +113,7 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
 
   // Reset state on load
   if (action === 'view') {
+    console.log('view!!!!')
     page = 1;
     requireSetup(metadata, projectId)
     await refreshIssues(clientState, metadata, projectId, zeitClient)
@@ -135,15 +137,15 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
       metadata.linkedApplications[projectId].envAuthToken = clientState.envAuthToken
       await zeitClient.setMetadata(metadata)
       // set env vars
-      const secretNameApiKey = await zeitClient.ensureSecret(
-        'auth-token',
-        metadata.linkedApplications[projectId].envAuthToken
-      )
-      await zeitClient.upsertEnv(
-        payload.projectId,
-        'AUTH_TOKEN',
-        secretNameApiKey
-      )
+      // const secretNameApiKey = await zeitClient.ensureSecret(
+      //   'auth-token',
+      //   metadata.linkedApplications[projectId].envAuthToken
+      // )
+      // await zeitClient.upsertEnv(
+      //   payload.projectId,
+      //   'AUTH_TOKEN',
+      //   secretNameApiKey
+      // )
 
       metadata.linkedApplications[projectId].organizationSlug = clientState.organizationSlug
       await zeitClient.setMetadata(metadata)
@@ -216,16 +218,20 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
       paginationLinks.nextLink,
     );
 
-    console.log(resp);
-    // paginationLinks = resp.paginationLinks;
+    // console.log(resp);
+    paginationLinks = resp.paginationLinks;
+    console.log('next page after:', paginationLinks)
+    issues = resp.issues;
+
+    console.log('issues length: ', issues.length)
     
     // metadata.linkedApplications[projectId].issues = resp.issues;
     // await zeitClient.setMetadata(metadata)
     // return resp.issues;
 
-    if (page * itemsPerPage < issues.length) {
+    // if (page * itemsPerPage < issues.length) {
       page++;
-    }
+    // }
   }
 
   if (action === 'prev-page') {
@@ -244,9 +250,12 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
     clientState.issueFilter = '';
   }
 
+  console.log('issues:', issues)
+  console.log('issueView:', paginationLinks)
   const IssueView = issueView({
     page,
     itemsPerPage,
+    // itemsPerPage: issues.length,
     data: issues,
     members: metadata.linkedApplications[projectId].members,
     clientState,

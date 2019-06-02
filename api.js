@@ -4,9 +4,6 @@ var URL = require('url').URL;
 
 const fetchRequest = async (url, options = null) => {
   const response = await fetch(url, options);
-
-  console.log(response)
-
   const json = await response.json();
 
   if (!response.ok) {
@@ -28,7 +25,7 @@ const request = (method, path = '', params = null, options = null) => {
   // };
   if (method === 'GET') {
     url.search = new URLSearchParams(params)
-    console.log(url.href)
+    // console.log(url.href)
     return fetchRequest(url.href, options)
   }
 
@@ -52,6 +49,11 @@ const getHeaders = (authToken) => {
 }
 
 const getPaginationLinks = (res) => {
+  // console.log('headers:', res.headers)
+
+  // console.log('Link:', res.headers.get('Link'))
+  // console.log('link:', res.headers.get('link'))
+
   const linkHeaders = res.headers.get('Link');
   if (!linkHeaders) {
     return {
@@ -60,11 +62,14 @@ const getPaginationLinks = (res) => {
     }
   }
   linkHeadersArr = linkHeaders.split(',');
+
+  console.log('linkHeadersArr:', linkHeadersArr)
+
   const prevArr = linkHeadersArr[0].split(';');
   const nextarr = linkHeadersArr[1].split(';');
 
   const prev = prevArr[0].trim()
-  console.log(prevArr)
+  // console.log(prevArr)
   const needsPrevLink = prevArr[2].indexOf('results="true"') > -1;
   if (needsPrevLink) {
     prevLink = prev.substr(1, prev.length - 2);
@@ -93,7 +98,7 @@ module.exports.getIssues = async (authToken, organizationSlug, projectSlug, stat
   const r = await request('GET', `/projects/${organizationSlug}/${projectSlug}/issues/`, params, options)
 
   const paginationLinks = getPaginationLinks(r.response)
-  console.log('paginationLinks:', paginationLinks)
+  // console.log('paginationLinks:', paginationLinks)
 
   return {
     issues: r.json,
@@ -103,8 +108,18 @@ module.exports.getIssues = async (authToken, organizationSlug, projectSlug, stat
 
 module.exports.getIssuesFromPaginationLink = async (authToken, link) => {
   const options = getHeaders(authToken);
+
+  console.log('link:', link)
+
   const r = await request('GET', link.replace('https://sentry.io/api/0', ''), null, options)
+  
+
+
   const paginationLinks = getPaginationLinks(r.response)
+
+  console.log('getIssuesFromPaginationLink:', r.json)  
+  console.log('getIssuesFromPaginationLink paginationLinks:', paginationLinks)
+
   return {
     issues: r.json,
     paginationLinks: paginationLinks,
