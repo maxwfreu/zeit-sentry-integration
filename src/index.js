@@ -34,7 +34,7 @@ const requireSetup = (metadata, projectId) => {
     !metadata.linkedApplications[projectId].organizationSlug ||
     !metadata.linkedApplications[projectId].projectSlug
   ) {
-    throwDisplayableError({ message: 'SENTRY_AUTH_TOKEN, ORGANIZATION_SLUG, and PROJECT_SLUG must be set.' })
+    throwDisplayableError({ message: 'SENTRY_AUTH_TOKEN, SENTRY_ORGANIZATION_SLUG, and SENTRY_PROJECT_SLUG must be set.' })
   }
 }
 

@@ -23,9 +23,9 @@ module.exports = (props) => {
   const availableEnvVariables = `
     process.env.SENTRY_DSN
     process.env.SENTRY_AUTH_TOKEN
-    process.env.ORGANIZATION_SLUG
-    process.env.PROJECT_SLUG
-    process.env.PROJECT_ID
+    process.env.SENTRY_ORGANIZATION_SLUG
+    process.env.SENTRY_PROJECT_SLUG
+    process.env.SENTRY_PROJECT_ID
   `
 
   return htm`
@@ -54,13 +54,13 @@ module.exports = (props) => {
                   width="100%"
                 />
                <Input
-                  label="ORGANIZATION_SLUG"
+                  label="SENTRY_ORGANIZATION_SLUG"
                   name="organizationSlug"
                   value=${metadata.linkedApplications[projectId].organizationSlug || ''}
                   width="100%"
                 />
                <Input
-                  label="PROJECT_SLUG"
+                  label="SENTRY_PROJECT_SLUG"
                   name="projectSlug"
                   value=${metadata.linkedApplications[projectId].projectSlug || ''}
                   width="100%"
