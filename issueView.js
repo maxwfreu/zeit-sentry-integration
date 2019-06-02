@@ -17,7 +17,7 @@ module.exports = (props) => {
           <Box display="flex" justifyContent="space-between" padding="16px 0" alignItems="center">
             <Box display="flex" flexDirection="row" alignItems="center">
               <Box marginRight="8px">Status Filter:</Box>
-              <Select name="issueStatusFilter" value="${clientState.issueStatusFilter || 'unresolved'}" action="change-issue-status-filter">
+              <Select name="issueStatusFilter" value="${clientState.issueStatusFilter || 'unresolved'}" action="getIssues">
                 <Option value="unresolved" caption="Unresolved" />
                 <Option value="resolved" caption="Resolved" />
                 <Option value="all" caption="All" />
@@ -69,8 +69,8 @@ module.exports = (props) => {
               </Box>
             </Box>
             <Box display="flex" flexDirection="row" marginRight="16px">
-              <Box width="64px">Count</Box>
-              <Box width="64px">Users</Box>
+              <Box width="64px" display="flex" justifyContent="center" alignItems="center">Count</Box>
+              <Box width="64px" display="flex" justifyContent="center" alignItems="center">Users</Box>
             </Box>
           </Box>
           ${data.map((item, index) => {
@@ -124,11 +124,11 @@ module.exports = (props) => {
                       </Box>
                     </Box>
                     <Box display="flex">
-                      <Box width="64px">
-                        <Box textAlign="center">${item.count}</Box>
+                      <Box width="64px" display="flex" justifyContent="center" alignItems="center">
+                        ${item.count}
                       </Box>
-                      <Box width="64px">
-                        <Box textAlign="center">${item.userCount}</Box>
+                      <Box width="64px" display="flex" justifyContent="center" alignItems="center">
+                        ${item.userCount}
                       </Box>
                     </Box>
                   </Box>

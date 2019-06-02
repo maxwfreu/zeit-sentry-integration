@@ -91,6 +91,7 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
           metadata.linkedApplications[projectId].envAuthToken,
           metadata.linkedApplications[projectId].organizationSlug,
           metadata.linkedApplications[projectId].projectSlug,
+          clientState.issueStatusFilter || 'resolved',
         );
       } catch (err) {
         throwDisplayableError({ message: `There was an error fetching issues. ${err.message}` })
