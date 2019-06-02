@@ -10,7 +10,12 @@ module.exports = (props) => {
     clientState,
     action,
     members,
+    paginationLinks,
   } = props;
+
+  const itemStart = (page - 1) * itemsPerPage + 1;
+  const itemEnd = itemStart + itemsPerPage - 1 - (itemsPerPage - data.length);
+
 
   return htm`
     <Container>
@@ -57,7 +62,7 @@ module.exports = (props) => {
           <Box display="flex" justifyContent="space-between" padding="16px 0" alignItems="center">
             <Box display="flex" flexDirection="row">
               <Box marginRight="16px" display="flex" alignItems="center">
-                <H1> Errors (${data.length})</H1>
+                <H1> Errors (${itemStart} - ${itemEnd})</H1>
               </Box>
             </Box>
             <Button action="${Actions.GET_ISSUES}" small>Refresh</Button>
@@ -107,7 +112,8 @@ module.exports = (props) => {
                 inFilter = true;
               }
             }
-            if (page === Math.ceil((index + 1)/itemsPerPage) && inFilter) {
+            // if (page === Math.ceil((index + 1)/itemsPerPage) && inFilter) {
+            if (inFilter) {
               const imgURL = `https://s1.sentry-cdn.com/_static/df7081b5c6bb784faeea5116bd62b398/sentry/dist/${item.project.slug}.svg`
               const lastSeen = moment(item.lastSeen).fromNow();
               let isChecked = clientState[item.id] === true;
@@ -150,7 +156,7 @@ module.exports = (props) => {
 
                       <Box display="flex" justifyContent="center" alignItems="center">
                         <Select name="${assignedToId}" value="${assignedToValue}" action="${assignedAction}">
-                          <Option value="noone" caption="No One" />
+                          <Option value="" caption="No One" />
                           ${members.map((member, index) => {
                             return htm`
                               <Option value="${member.user.id}" caption="${member.user.name}" />
@@ -170,11 +176,11 @@ module.exports = (props) => {
         <FsFooter>
           <Box display="flex" justifyContent="space-between" width="100%">
             <Box display="flex" alignItems="center">
-              Page: ${page} / ${Math.max(Math.ceil(data.length / itemsPerPage), 1)}
+              Issues: ${itemStart} - ${itemEnd}
             </Box>
             <Box>
-              <Button action="${Actions.PREV_PAGE}" disabled="${page === 1}">prev</Button>
-              <Button action="${Actions.NEXT_PAGE}" disabled="${page * itemsPerPage >= data.length}">next</Button>
+              <Button action="${Actions.PREV_PAGE}" disabled="${!paginationLinks.prevLink}">prev</Button>
+              <Button action="${Actions.NEXT_PAGE}" disabled="${!paginationLinks.nextLink}">next</Button>
             </Box>
           </Box>
         </FsFooter>

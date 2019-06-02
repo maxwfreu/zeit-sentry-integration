@@ -10,6 +10,7 @@ const {
   getIssues,
   updateIssues,
   getMembers,
+  getIssuesFromPaginationLink,
   getDSN,
 } = require('./api');
 
@@ -20,7 +21,9 @@ let page = 1;
 let isMissingSettings = true;
 let showSettings = false;
 let selectAll = false;
+let paginationLinks = {}
 let issues = [];
+
 
 const throwDisplayableError = ({ message }) => {
   const error = new Error(message)
@@ -66,17 +69,18 @@ const refreshIssues = async (clientState, metadata, projectId, zeitClient) => {
     issueSortByFilter = 'freq';
   }
 
-  console.log('issueStatusFilter: ', issueStatusFilter);
-  console.log('issueSortByFilter: ', issueSortByFilter);
-
   try {
-    issues = await getIssues(
+    const resp = await getIssues(
       metadata.linkedApplications[projectId].envAuthToken,
       metadata.linkedApplications[projectId].organizationSlug,
       metadata.linkedApplications[projectId].projectSlug,
       issueStatusFilter,
       issueSortByFilter,
     );
+
+    paginationLinks = resp.paginationLinks;
+    issues = resp.issues;
+
   } catch (err) {
     console.log(err)
     throwDisplayableError({ message: `There was an error fetching issues. ${err.message}` })
@@ -233,15 +237,25 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
   }
 
   if (action === Actions.NEXT_PAGE) {
-    if (page * itemsPerPage < issues.length) {
-      page++;
-    }
+    const resp = await getIssuesFromPaginationLink(
+      metadata.linkedApplications[projectId].envAuthToken,
+      paginationLinks.nextLink,
+    );
+
+    paginationLinks = resp.paginationLinks;
+    issues = resp.issues;
+    page++;
   }
 
   if (action === Actions.PREV_PAGE) {
-    if ( page > 1) {
-      page --;
-    }
+    const resp = await getIssuesFromPaginationLink(
+      metadata.linkedApplications[projectId].envAuthToken,
+      paginationLinks.prevLink,
+    );
+
+    paginationLinks = resp.paginationLinks;
+    issues = resp.issues;
+    page--;
   }
 
   if (action === Actions.CLEAR_FILTER) {
@@ -263,6 +277,7 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
       members: metadata.linkedApplications[projectId].members,
       clientState,
       action,
+      paginationLinks,
     });
   }
 
