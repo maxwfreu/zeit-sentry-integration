@@ -75,13 +75,13 @@ module.exports = (props) => {
         borderTopLeftRadius="5px"
         bottom="0"
         display="flex"
+        padding="0 8px"
+        position="absolute"
         right="0"
         justifyContent="center"
-        width="64px"
         zIndex="1"
-        position="absolute"
       >
-        ${item.count}
+        ${item.count} issue(s), ${item.userCount} user(s)
       </Box>
     </Box>
   `

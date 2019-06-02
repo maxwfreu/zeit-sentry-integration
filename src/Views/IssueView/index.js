@@ -3,24 +3,6 @@ const moment = require('moment');
 const { Actions } = require('../../Actions');
 const issueItem = require('./issueItem');
 
-const issueFilterer = (item, clientState) => {
-  let inFilter = true;
-  const { issueFilter } = clientState;
-  if (issueFilter) {
-    inFilter = false;
-    if (item.culprit && item.culprit.toLowerCase().indexOf(issueFilter.toLowerCase()) > -1) {
-      inFilter = true;
-    }
-    if (item.metadata.type && item.metadata.type.toLowerCase().indexOf(issueFilter.toLowerCase()) > -1) {
-      inFilter = true;
-    }
-    if (item.metadata.value && item.metadata.value.toLowerCase().indexOf(issueFilter.toLowerCase()) > -1) {
-      inFilter = true;
-    }
-  }
-  return inFilter;
-}
-
 module.exports = (props) => {
   const {
     page,
@@ -34,12 +16,10 @@ module.exports = (props) => {
     issueStatusFilter,
   } = props;
 
-  const filteredIssues = data.filter(issue => issueFilterer(issue, clientState));
-
   const itemStart = (page - 1) * itemsPerPage + 1;
-  const itemEnd = itemStart + itemsPerPage - 1 - (itemsPerPage - filteredIssues.length);
+  const itemEnd = itemStart + itemsPerPage - 1 - (itemsPerPage - data.length);
   let issueIndexes = `${itemStart} - ${itemEnd}`;
-  if (filteredIssues.length === 0 ) {
+  if (data.length === 0 ) {
     issueIndexes = '0';
   }
 
@@ -50,7 +30,7 @@ module.exports = (props) => {
     <Container>
       <Fieldset>
         <FsContent>
-          <Box display="flex" justifyContent="space-between" padding="16px 0" alignItems="center">
+          <Box display="flex" justifyContent="space-between" padding="16px 0" alignItems="center" flexWrap="wrap">
             <Box display="flex" flexDirection="row" alignItems="center">
               <Box marginRight="8px">Sort By:</Box>
               <Select name="issueSortByFilter" value="${issueSortByFilter}" action="${Actions.GET_ISSUES}">
@@ -67,12 +47,12 @@ module.exports = (props) => {
               </Select>
             </Box>
             <Box display="flex" flexDirection="row" alignItems="center">
-              <Box marginRight="8px">Issue Filter:</Box>
+              <Box marginRight="8px">Seach All Issues:</Box>
               <Box marginRight="16px" display="flex" alignItems="center">
                 <Input name="issueFilter" value="${clientState.issueFilter || ''}" />
               </Box>
               <Box marginRight="${clientState.issueFilter ? '16px' : ''}" display="flex" alignItems="center">
-                <Button action="filter-issues" secondary small>Filter</Button>
+                <Button action="${Actions.GET_ISSUES}" secondary small>Search</Button>
               </Box>
               ${clientState.issueFilter ? htm`
                 <Box display="flex" alignItems="center">
@@ -112,7 +92,7 @@ module.exports = (props) => {
               </Box>
             </Box>
           </Box>
-          ${filteredIssues.map((item) => {
+          ${data.map((item) => {
             return htm`${issueItem({
               action,
               clientState,

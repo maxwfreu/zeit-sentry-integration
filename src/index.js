@@ -81,6 +81,7 @@ const refreshIssues = async (clientState, metadata, projectId, zeitClient) => {
       metadata.linkedApplications[projectId].projectSlug,
       issueStatusFilter,
       issueSortByFilter,
+      clientState.issueFilter,
     );
     issues = resp.issues;
 
@@ -198,7 +199,7 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
         clientState.projectSlug,
       );
       const dsnClientKeyData = dsnRes.json[0];
-      console.log(dsnClientKeyData)
+
       const dsn = `https://${dsnClientKeyData.id}@sentry.io/${dsnClientKeyData.projectId}`;
 
       // Set DSN
@@ -339,7 +340,7 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
     } else {
       curPage++;
     }
-    console.log('go go page: ', curPage)
+
     try {
       await refreshIssuesForPagination(
         metadata,
@@ -405,7 +406,6 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
       issueStatusFilter = clientState.issueStatusFilter;
     }
 
-    console.log(issueSortByFilter)
     View = issueView({
       page: metadata.linkedApplications[projectId].page || 1,
       itemsPerPage,

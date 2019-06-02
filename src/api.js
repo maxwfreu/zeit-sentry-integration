@@ -103,13 +103,27 @@ const getPaginationLinks = (res) => {
   return { prevLink, nextLink };
 };
 
-module.exports.getIssues = async (authToken, organizationSlug, projectSlug, status='unresolved', sort='freq') => {
+module.exports.getIssues = async (authToken, organizationSlug, projectSlug, status='unresolved', sort='freq', issueFilter=null) => {
   const options = getHeaders(authToken);
   const params = {
     query: status === 'all' ? '' : `is:${status}`,
     sort,
-    limit: '10'
   }
+  // If we have an issue filter, grab all issues
+  if (!issueFilter){
+    params.limit = 10;
+  } else {
+    // TODO: Figure out how to combine queries (this does
+    // not work the same way the query params show up in the sentry console)
+    // if (params.query) {
+    //   params.query = `${params.query}+${issueFilter}`
+    // } else {
+    //   params.query = issueFilter
+    // }
+    params.query = issueFilter;
+  }
+
+  console.log(params)
 
   const result = await request('GET', `/projects/${organizationSlug}/${projectSlug}/issues/`, params, options)
   const paginationLinks = getPaginationLinks(result.response)
