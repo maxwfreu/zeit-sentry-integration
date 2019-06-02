@@ -71,7 +71,7 @@ module.exports = (props) => {
             </Box>
             <Box display="flex" flexDirection="row" marginRight="16px">
               <Box width="64px" display="flex" justifyContent="center" alignItems="center">Count</Box>
-              <Box width="64px" display="flex" justifyContent="center" alignItems="center">Users</Box>
+              <Box width="64px" display="flex" justifyContent="center" alignItems="center">Assigned To</Box>
             </Box>
           </Box>
           ${data.map((item, index) => {
@@ -135,11 +135,8 @@ module.exports = (props) => {
                       <Box width="64px" display="flex" justifyContent="center" alignItems="center">
                         ${item.count}
                       </Box>
-                      <Box width="64px" display="flex" justifyContent="center" alignItems="center">
-                        ${item.userCount}
-                      </Box>
 
-                      <Box width="64px" display="flex" justifyContent="center" alignItems="center">
+                      <Box display="flex" justifyContent="center" alignItems="center">
                         <Select name="${item.id}-assignedTo" value="${assignedTo}" action="assignTo">
                           <Option value="noone" caption="No One" />
                           ${members.map((member, index) => {
