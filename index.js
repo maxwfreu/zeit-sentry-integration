@@ -6,6 +6,7 @@ const {
   getIssues,
   updateIssues,
   getMembers,
+  getIssuesFromPaginationLink,
 } = require('./api')
 
 const itemsPerPage = 10;
@@ -13,6 +14,7 @@ let page = 1;
 let isMissingSettings = true;
 let showSettings = false;
 let selectAll = false;
+let paginationLinks = {}
 
 const throwDisplayableError = ({ message }) => {
   const error = new Error(message)
@@ -36,16 +38,18 @@ const refreshIssues = async (clientState, metadata, projectId, zeitClient) => {
   }
 
   try {
-    issues = await getIssues(
+    const resp = await getIssues(
       metadata.linkedApplications[projectId].envAuthToken,
       metadata.linkedApplications[projectId].organizationSlug,
       metadata.linkedApplications[projectId].projectSlug,
       clientState.issueStatusFilter || 'resolved',
     );
+
+    paginationLinks = resp.paginationLinks;
     
-    metadata.linkedApplications[projectId].issues = issues;
+    metadata.linkedApplications[projectId].issues = resp.issues;
     await zeitClient.setMetadata(metadata)
-    return issues;
+    return resp.issues;
   } catch (err) {
     throwDisplayableError({ message: `There was an error fetching issues. ${err.message}` })
   }
@@ -177,6 +181,19 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
   }
 
   if (action === 'next-page') {
+    console.log('next-page:', paginationLinks)
+    const resp = await getIssuesFromPaginationLink(
+      metadata.linkedApplications[projectId].envAuthToken,
+      paginationLinks.nextLink,
+    );
+
+    console.log(resp);
+    // paginationLinks = resp.paginationLinks;
+    
+    // metadata.linkedApplications[projectId].issues = resp.issues;
+    // await zeitClient.setMetadata(metadata)
+    // return resp.issues;
+
     if (page * itemsPerPage < metadata.linkedApplications[projectId].issues.length) {
       page++;
     }
@@ -205,6 +222,7 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
     members: metadata.linkedApplications[projectId].members,
     clientState,
     action,
+    paginationLinks,
   });
 
   return htm`

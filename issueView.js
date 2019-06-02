@@ -9,7 +9,11 @@ module.exports = (props) => {
     clientState,
     action,
     members,
+    paginationLinks,
   } = props;
+
+  console.log('-----')
+  console.log(paginationLinks)
 
   return htm`
     <Container>
@@ -170,7 +174,7 @@ module.exports = (props) => {
             </Box>
             <Box>
               <Button action="prev-page" disabled="${page === 1}">prev</Button>
-              <Button action="next-page" disabled="${page * itemsPerPage >= data.length}">next</Button>
+              <Button action="next-page" disabled="${!paginationLinks.nextLink}">next</Button>
             </Box>
           </Box>
         </FsFooter>
