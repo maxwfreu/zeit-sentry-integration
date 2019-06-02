@@ -69,16 +69,25 @@ module.exports.paginateIssues = (authToken, organizationSlug, projectSlug, pagin
   return request('GET', paginationURL, {}, options)
 }
 
-module.exports.updateIssues = (authToken, organizationSlug, projectSlug, ids, status) => {
+module.exports.getMembers = (authToken, organizationSlug, projectSlug) => {
   const options = {
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${authToken}`
     },
   }
-  const params = {
-    status,
+
+  return request('GET', `/projects/${organizationSlug}/${projectSlug}/members/`, null, options)
+}
+
+module.exports.updateIssues = (authToken, organizationSlug, projectSlug, ids, params) => {
+  const options = {
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${authToken}`
+    },
   }
+
   const idParams = ids.map((id) => `id=${id}`).join('&');
   return request('PUT', `/projects/${organizationSlug}/${projectSlug}/issues/?${idParams}`, params, options)
 }

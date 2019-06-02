@@ -6,7 +6,8 @@ const {
   getIssues,
   updateIssues,
   paginateIssues,
-} = require('./api')
+  getMembers,
+} = require('./api');
 
 const itemsPerPage = 10;
 let page = 1;
@@ -22,6 +23,8 @@ const throwDisplayableError = ({ message }) => {
 
 const getPaginationLinks = (res) => {
   const linkHeaders = res.response.headers.get('Link');
+  let prevLink = '';
+  let nextLink = '';
   if (!linkHeaders) {
     return {
       prevLink: '',
@@ -33,7 +36,7 @@ const getPaginationLinks = (res) => {
   const nextarr = linkHeadersArr[1].split(';');
 
   const prev = prevArr[0].trim()
-  console.log(prevArr)
+
   const needsPrevLink = prevArr[2].indexOf('results="true"') > -1;
   if (needsPrevLink) {
     prevLink = prev.substr(1, prev.length - 2);
@@ -51,8 +54,47 @@ const getPaginationLinks = (res) => {
   return { prevLink, nextLink };
 };
 
+const requireSetup = (metadata, projectId) => {
+  if (
+    !metadata.linkedApplications[projectId].envAuthToken ||
+    !metadata.linkedApplications[projectId].organizationSlug ||
+    !metadata.linkedApplications[projectId].projectSlug
+  ) {
+    throwDisplayableError({ message: 'AUTH_TOKEN, ORGANIZATION_SLUG, and PROJECT_SLUG must be set.' })
+  }
+}
+
+const refreshIssues = async (clientState, metadata, projectId, zeitClient) => {
+  if (!metadata.linkedApplications) {
+    metadata.linkedApplications = {}
+  }
+
+  try {
+    res = await getIssues(
+      metadata.linkedApplications[projectId].envAuthToken,
+      metadata.linkedApplications[projectId].organizationSlug,
+      metadata.linkedApplications[projectId].projectSlug,
+      clientState.issueStatusFilter || 'resolved',
+    );
+
+    issues = res.json;
+    // const { prevLink, nextLink} = getPaginationLinks(res);
+    // metadata.linkedApplications[projectId].prevLink = prevLink;
+    // metadata.linkedApplications[projectId].nextLink = nextLink;
+    metadata.linkedApplications[projectId].issues = issues;
+
+    // console.log("get issues prev link ", prevLink);
+    // console.log("get issues next link ", nextLink)
+  
+    await zeitClient.setMetadata(metadata)
+    return issues;
+  } catch (err) {
+    throwDisplayableError({ message: `There was an error fetching issues. ${err.message}` })
+  }
+}
+
 module.exports = withUiHook(async ({ payload, zeitClient }) => {
-  const { clientState, action, projectId } = payload
+  const { clientState, action, projectId, slug } = payload
   if (!projectId) {
     return htm`
       <Page>
@@ -60,11 +102,6 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
         <ProjectSwitcher />
       </Page>
     `
-  }
-
-  // Reset state on load
-  if (action === 'view') {
-    page = 1;
   }
 
   const metadata = await zeitClient.getMetadata()
@@ -82,6 +119,28 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
     }
   }
   let errorMessage = ''
+
+  // Reset state on load
+  if (action === 'view') {
+    page = 1;
+    requireSetup(metadata, projectId)
+    await refreshIssues(clientState, metadata, projectId, zeitClient)
+    let members;
+    try {
+      res = await getMembers(
+        metadata.linkedApplications[projectId].envAuthToken,
+        metadata.linkedApplications[projectId].organizationSlug,
+        metadata.linkedApplications[projectId].projectSlug,
+        clientState.issueStatusFilter || 'resolved',
+      );
+      members = res.json;
+    } catch (err) {
+      throwDisplayableError({ message: `There was an error fetching issues. ${err.message}` })
+    }
+    metadata.linkedApplications[projectId].members = members;
+    await zeitClient.setMetadata(metadata)
+  }
+
   try {
     if (action === 'submit') {
       // set metadata
@@ -111,34 +170,8 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
     }
 
     if (action === 'getIssues') {
-      if (
-        !metadata.linkedApplications[projectId].envAuthToken ||
-        !metadata.linkedApplications[projectId].organizationSlug ||
-        !metadata.linkedApplications[projectId].projectSlug
-      ) {
-        throwDisplayableError({ message: 'AUTH_TOKEN, ORGANIZATION_SLUG, and PROJECT_SLUG must be set.' })
-      }
-
-      let issues
-      try {
-        const res = await getIssues(
-          metadata.linkedApplications[projectId].envAuthToken,
-          metadata.linkedApplications[projectId].organizationSlug,
-          metadata.linkedApplications[projectId].projectSlug,
-          clientState.issueStatusFilter || 'resolved',
-          clientState.issueSortByFilter || 'freq',
-        );
-        issues = res.json;
-        const { prevLink, nextLink} = getPaginationLinks(res);
-        metadata.linkedApplications[projectId].prevLink = prevLink;
-        metadata.linkedApplications[projectId].nextLink = nextLink;
-        console.log("get issues prev link ", prevLink);
-        console.log("get issues next link ", nextLink)
-      } catch (err) {  
-        throwDisplayableError({ message: `There was an error fetching issues. ${err.message}` })
-      }
-      metadata.linkedApplications[projectId].issues = issues;
-      await zeitClient.setMetadata(metadata)
+      requireSetup(metadata, projectId)
+      await refreshIssues(clientState, metadata, projectId, zeitClient)
     }
 
     if (action === 'resolve') {
@@ -154,7 +187,7 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
           metadata.linkedApplications[projectId].organizationSlug,
           metadata.linkedApplications[projectId].projectSlug,
           issuesToResolve,
-          'resolved',
+          {status: 'resolved'},
         )
       }
       catch (err) {
@@ -186,11 +219,9 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
             clientState.issueSortByFilter || 'freq',
           );
           issues = res.json;
-          const { prevLink, nextLink} = getPaginationLinks(res);
-          metadata.linkedApplications[projectId].prevLink = prevLink;
-          metadata.linkedApplications[projectId].nextLink = nextLink;
-          console.log("get page prev link ", prevLink);
-          console.log("get page next link ", nextLink)
+          // const { prevLink, nextLink} = getPaginationLinks(res);
+          // metadata.linkedApplications[projectId].prevLink = prevLink;
+          // metadata.linkedApplications[projectId].nextLink = nextLink;
         } catch (err) {
           throwDisplayableError({ message: `There was an error fetching issues. ${err.message}` })
         }
@@ -223,16 +254,33 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
             clientState.issueSortByFilter || 'freq',
           );
           issues = res.json;
-          const { prevLink, nextLink} = getPaginationLinks(res);
-          metadata.linkedApplications[projectId].prevLink = prevLink;
-          metadata.linkedApplications[projectId].nextLink = nextLink;
-          console.log("get page prev link ", prevLink);
-          console.log("get page next link ", nextLink)
+          // const { prevLink, nextLink} = getPaginationLinks(res);
+          // metadata.linkedApplications[projectId].prevLink = prevLink;
+          // metadata.linkedApplications[projectId].nextLink = nextLink;
         } catch (err) {
           throwDisplayableError({ message: `There was an error fetching issues. ${err.message}` })
         }
         metadata.linkedApplications[projectId].issues = issues;
         await zeitClient.setMetadata(metadata)
+      }
+    }
+
+    if (action.indexOf('AssignTo') !== -1) {
+      const assignTo = clientState[action];
+      const [issueId, actionName] = action.split(':')
+
+      try {
+        await updateIssues(
+          metadata.linkedApplications[projectId].envAuthToken,
+          metadata.linkedApplications[projectId].organizationSlug,
+          metadata.linkedApplications[projectId].projectSlug,
+          [issueId],
+          {assignedTo: assignTo},
+        )
+        await refreshIssues(clientState, metadata, projectId, zeitClient)
+      }
+      catch (err) {
+        throwDisplayableError({ message: `There was an error updating issue. ${err.message}` })
       }
     }
   } catch (err) {
@@ -257,6 +305,7 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
     page,
     itemsPerPage,
     data: metadata.linkedApplications[projectId].issues,
+    members: metadata.linkedApplications[projectId].members,
     clientState,
     action,
     prevLink: metadata.linkedApplications[projectId].prevLink,

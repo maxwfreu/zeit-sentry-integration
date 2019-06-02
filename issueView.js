@@ -10,6 +10,7 @@ module.exports = (props) => {
     action,
     prevLink,
     nextLink,
+    members,
   } = props;
 
   return htm`
@@ -79,10 +80,17 @@ module.exports = (props) => {
             </Box>
             <Box display="flex" flexDirection="row" marginRight="16px">
               <Box width="64px" display="flex" justifyContent="center" alignItems="center">Count</Box>
-              <Box width="64px" display="flex" justifyContent="center" alignItems="center">Users</Box>
+              <Box display="flex" justifyContent="center" alignItems="center">Assigned To</Box>
             </Box>
           </Box>
           ${data.map((item, index) => {
+            const assignedToId = `${item.id}:AssignTo`;
+            const assignedAction = `${item.id}:AssignTo`;
+            let assignedToValue = '';
+            if (item.assignedTo) {
+              assignedToValue = item.assignedTo.id;
+            }
+
             let inFilter = true;
             const { issueFilter } = clientState;
             if (issueFilter) {
@@ -108,6 +116,7 @@ module.exports = (props) => {
                 isChecked = true;
               }
               const textDecoration = item.status === 'resolved' ? 'line-through' : '';
+
               return htm`
                 <Box display="flex" justifyContent="space-between" flexDirection="column" border="1px solid #eaeaea" borderRadius="5px" padding="16px" margin="8px 0">
                   <Box display="flex" justifyContent="space-between">
@@ -136,9 +145,18 @@ module.exports = (props) => {
                       <Box width="64px" display="flex" justifyContent="center" alignItems="center">
                         ${item.count}
                       </Box>
-                      <Box width="64px" display="flex" justifyContent="center" alignItems="center">
-                        ${item.userCount}
+
+                      <Box display="flex" justifyContent="center" alignItems="center">
+                        <Select name="${assignedToId}" value="${assignedToValue}" action="${assignedAction}">
+                          <Option value="noone" caption="No One" />
+                          ${members.map((member, index) => {
+                            return htm`
+                              <Option value="${member.user.id}" caption="${member.user.name}" />
+                            `
+                          })}
+                        </Select>
                       </Box>
+
                     </Box>
                   </Box>
                 </Box>
