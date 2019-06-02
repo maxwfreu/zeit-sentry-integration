@@ -278,6 +278,7 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
     });
   }
 
+  console.log(paginationLinks)
   return htm`
     <Page>
       ${errorMessage && htm`<Notice type="error">${errorMessage}</Notice>`}

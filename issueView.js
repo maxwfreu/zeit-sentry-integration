@@ -177,7 +177,7 @@ module.exports = (props) => {
               Issues: ${itemStart} - ${itemEnd}
             </Box>
             <Box>
-              <Button action="prev-page" disabled="${!paginationLinks.nextLink}">prev</Button>
+              <Button action="prev-page" disabled="${!paginationLinks.prevLink}">prev</Button>
               <Button action="next-page" disabled="${!paginationLinks.nextLink}">next</Button>
             </Box>
           </Box>
