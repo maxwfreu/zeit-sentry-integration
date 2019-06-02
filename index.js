@@ -30,7 +30,7 @@ const requireSetup = (metadata, projectId) => {
     !metadata.linkedApplications[projectId].organizationSlug ||
     !metadata.linkedApplications[projectId].projectSlug
   ) {
-    throwDisplayableError({ message: 'AUTH_TOKEN, ORGANIZATION_SLUG, and PROJECT_SLUG must be set.' })
+    throwDisplayableError({ message: 'SENTRY_AUTH_TOKEN, ORGANIZATION_SLUG, and PROJECT_SLUG must be set.' })
   }
 }
 
@@ -102,10 +102,17 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
       issues: [],
     }
   }
+
+  let isMissingSettings = (
+    !metadata.linkedApplications[projectId].envAuthToken ||
+    !metadata.linkedApplications[projectId].organizationSlug ||
+    !metadata.linkedApplications[projectId].projectSlug
+  );
+
   let errorMessage = ''
 
   // Reset state on load
-  if (action === 'view') {
+  if (action === 'view' && !isMissingSettings) {
     page = 1;
     requireSetup(metadata, projectId)
     await refreshIssues(clientState, metadata, projectId, zeitClient)
@@ -135,7 +142,7 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
       )
       await zeitClient.upsertEnv(
         payload.projectId,
-        'AUTH_TOKEN',
+        'SENTRY_AUTH_TOKEN',
         secretNameApiKey
       )
 
@@ -147,9 +154,9 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
       showSettings = false;
 
       const dsnRes = await getDSN(
-        metadata.linkedApplications[projectId].envAuthToken,
-        metadata.linkedApplications[projectId].organizationSlug,
-        metadata.linkedApplications[projectId].projectSlug,
+        clientState.envAuthToken,
+        clientState.organizationSlug,
+        clientState.projectSlug,
       );
       const dsn = `https://${dsnRes[0].id}@sentry.io/${dsnRes[0].projectId}`;
 
@@ -229,12 +236,6 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
       page --;
     }
   }
-
-  let isMissingSettings = (
-    !metadata.linkedApplications[projectId].envAuthToken ||
-    !metadata.linkedApplications[projectId].organizationSlug ||
-    !metadata.linkedApplications[projectId].projectSlug
-  );
 
   if (action === 'clear-filter') {
     clientState.issueFilter = '';

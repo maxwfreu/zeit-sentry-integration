@@ -27,9 +27,9 @@ module.exports = (props) => {
               <Container>
                ${errorMessage && htm`<Notice type="error">${errorMessage}</Notice>`}
                 <H1>Settings</H1>
-                <P>You can find your auth token at <Link href="https://sentry.io/settings/account/api/auth-tokens/" target="_blank">Sentry Auth Token</Link>. The configured keys will be availble as environment variables in your deployment as <B>AUTH_TOKEN</B> the next time you deploy. Additionally, <B>SENTRY_DSN</B> will be available for initializing in your application.</P>
+                <P>You can find your auth token at <Link href="https://sentry.io/settings/account/api/auth-tokens/" target="_blank">Sentry Auth Token</Link>. The configured keys will be availble as environment variables in your deployment as <B>SENTRY_AUTH_TOKEN</B> the next time you deploy. Additionally, <B>SENTRY_DSN</B> will be available for initializing in your application.</P>
                 <Input
-                  label="AUTH_TOKEN"
+                  label="SENTRY_AUTH_TOKEN"
                   name="envAuthToken"
                   value=${metadata.linkedApplications[projectId].envAuthToken}
                   type="password"
