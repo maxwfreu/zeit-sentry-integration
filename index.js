@@ -2,11 +2,14 @@ const { withUiHook, htm } = require('@zeit/integration-utils')
 const moment = require('moment');
 const { promisify } = require('util')
 const issueView = require('./issueView');
+const settingsView = require('./settingsView');
+
 const {
   getIssues,
   updateIssues,
   getMembers,
   getIssuesFromPaginationLink,
+  getDSN,
 } = require('./api')
 
 const itemsPerPage = 10;
@@ -30,7 +33,7 @@ const requireSetup = (metadata, projectId) => {
     !metadata.linkedApplications[projectId].organizationSlug ||
     !metadata.linkedApplications[projectId].projectSlug
   ) {
-    throwDisplayableError({ message: 'AUTH_TOKEN, ORGANIZATION_SLUG, and PROJECT_SLUG must be set.' })
+    throwDisplayableError({ message: 'SENTRY_AUTH_TOKEN, ORGANIZATION_SLUG, and PROJECT_SLUG must be set.' })
   }
 }
 
@@ -62,9 +65,6 @@ const refreshIssues = async (clientState, metadata, projectId, zeitClient) => {
     issueSortByFilter = 'freq';
   }
 
-  // console.log('issueStatusFilter: ', issueStatusFilter);
-  // console.log('issueSortByFilter: ', issueSortByFilter);
-
   try {
     const resp = await getIssues(
       metadata.linkedApplications[projectId].envAuthToken,
@@ -75,9 +75,6 @@ const refreshIssues = async (clientState, metadata, projectId, zeitClient) => {
     );
 
     paginationLinks = resp.paginationLinks;
-    console.log('refreshIssues:', paginationLinks)
-    // metadata.linkedApplications[projectId].issues = resp.issues;
-    // await zeitClient.setMetadata(metadata)
     issues = resp.issues;
 
   } catch (err) {
@@ -109,11 +106,18 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
       issues: [],
     }
   }
+
+  let isMissingSettings = (
+    !metadata.linkedApplications[projectId].envAuthToken ||
+    !metadata.linkedApplications[projectId].organizationSlug ||
+    !metadata.linkedApplications[projectId].projectSlug
+  );
+
   let errorMessage = ''
 
   // Reset state on load
-  if (action === 'view') {
-    console.log('view!!!!')
+  if (action === 'view' && !isMissingSettings) {
+
     page = 1;
     requireSetup(metadata, projectId)
     await refreshIssues(clientState, metadata, projectId, zeitClient)
@@ -138,12 +142,12 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
       await zeitClient.setMetadata(metadata)
       // set env vars
       // const secretNameApiKey = await zeitClient.ensureSecret(
-      //   'auth-token',
+      //   'sentry-token',
       //   metadata.linkedApplications[projectId].envAuthToken
       // )
       // await zeitClient.upsertEnv(
       //   payload.projectId,
-      //   'AUTH_TOKEN',
+      //   'SENTRY_AUTH_TOKEN',
       //   secretNameApiKey
       // )
 
@@ -153,6 +157,21 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
       await zeitClient.setMetadata(metadata)
 
       showSettings = false;
+
+      const dsnRes = await getDSN(
+        clientState.envAuthToken,
+        clientState.organizationSlug,
+        clientState.projectSlug,
+      );
+      const dsn = `https://${dsnRes[0].id}@sentry.io/${dsnRes[0].projectId}`;
+
+      await zeitClient.upsertEnv(
+        payload.projectId,
+        'SENTRY_DSN',
+        dsn
+      )
+
+      await refreshIssues(clientState, metadata, projectId, zeitClient)
     }
 
     if (action == 'showSettings') {
@@ -212,107 +231,54 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
   }
 
   if (action === 'next-page') {
-    console.log('next-page:', paginationLinks)
     const resp = await getIssuesFromPaginationLink(
       metadata.linkedApplications[projectId].envAuthToken,
       paginationLinks.nextLink,
     );
 
-    // console.log(resp);
     paginationLinks = resp.paginationLinks;
-    console.log('next page after:', paginationLinks)
     issues = resp.issues;
-
-    console.log('issues length: ', issues.length)
-    
-    // metadata.linkedApplications[projectId].issues = resp.issues;
-    // await zeitClient.setMetadata(metadata)
-    // return resp.issues;
-
-    // if (page * itemsPerPage < issues.length) {
-      page++;
-    // }
+    page++;
   }
 
   if (action === 'prev-page') {
-    if ( page > 1) {
-      page --;
-    }
-  }
+    const resp = await getIssuesFromPaginationLink(
+      metadata.linkedApplications[projectId].envAuthToken,
+      paginationLinks.prevLink,
+    );
 
-  let isMissingSettings = (
-    !metadata.linkedApplications[projectId].envAuthToken ||
-    !metadata.linkedApplications[projectId].organizationSlug ||
-    !metadata.linkedApplications[projectId].projectSlug
-  );
+    paginationLinks = resp.paginationLinks;
+    issues = resp.issues;
+    page--;
+  }
 
   if (action === 'clear-filter') {
     clientState.issueFilter = '';
   }
 
-  console.log('issues:', issues)
-  console.log('issueView:', paginationLinks)
-  const IssueView = issueView({
-    page,
-    itemsPerPage,
-    // itemsPerPage: issues.length,
-    data: issues,
-    members: metadata.linkedApplications[projectId].members,
-    clientState,
-    action,
-    paginationLinks,
-  });
+  let View;
+  if (isMissingSettings || showSettings) {
+    View = settingsView({
+      metadata,
+      errorMessage,
+      projectId,
+    });
+  } else {
+    View = issueView({
+      page,
+      itemsPerPage,
+      data: issues,
+      members: metadata.linkedApplications[projectId].members,
+      clientState,
+      action,
+      paginationLinks,
+    });
+  }
 
   return htm`
     <Page>
-        ${(isMissingSettings || showSettings) ?
-          htm`
-            <Box>
-              <Box marginBottom="10px" textAlign="right">
-                <ProjectSwitcher />
-              </Box>
-              <Box display="flex" justifyContent="center" margin-bottom="2rem">
-                <Img src="https://sentry-brand.storage.googleapis.com/sentry-logo-black.png" />
-              </Box>
-              <Container>
-               ${errorMessage && htm`<Notice type="error">${errorMessage}</Notice>`}
-                <H1>Settings</H1>
-                <P>You can find your auth token at <Link href="https://sentry.io/settings/account/api/auth-tokens/" target="_blank">Sentry Auth Token</Link>. The configured keys will be availble as environment variables in your deployment as <B>AUTH_TOKEN</B> the next time you deploy.</P>
-                <Input
-                  label="AUTH_TOKEN"
-                  name="envAuthToken"
-                  value=${metadata.linkedApplications[projectId].envAuthToken}
-                  type="password"
-                  width="100%"
-                />
-               <Input
-                  label="ORGANIZATION_SLUG"
-                  name="organizationSlug"
-                  value=${metadata.linkedApplications[projectId].organizationSlug || ''}
-                  width="100%"
-                />
-               <Input
-                  label="PROJECT_SLUG"
-                  name="projectSlug"
-                  value=${metadata.linkedApplications[projectId].projectSlug || ''}
-                  width="100%"
-                />
-              </Container>
-              <Container>
-                <Button action="submit">Submit Keys</Button>
-              </Container>
-            </Box>
-          `:
-          htm`
-            <Box>
-              ${errorMessage && htm`<Notice type="error">${errorMessage}</Notice>`}
-              <Container>
-                <Button action="showSettings">Update Settings</Button>
-              </Container>
-              ${IssueView}
-            </Box>
-          `
-        }
+      ${errorMessage && htm`<Notice type="error">${errorMessage}</Notice>`}
+      ${View}
     </Page>
   `
 });

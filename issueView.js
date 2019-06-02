@@ -12,10 +12,13 @@ module.exports = (props) => {
     paginationLinks,
   } = props;
 
-  console.log('-----')
-  console.log(data.length)
+  const itemStart = (page - 1) * itemsPerPage + 1;
+  const itemEnd = itemStart + itemsPerPage - 1;
 
   return htm`
+    <Container>
+      <Button action="showSettings">Update Settings</Button>
+    </Container>
     <Container>
       <Fieldset>
         <FsContent>
@@ -171,10 +174,10 @@ module.exports = (props) => {
         <FsFooter>
           <Box display="flex" justifyContent="space-between" width="100%">
             <Box display="flex" alignItems="center">
-              Page: ${page} / ${Math.max(Math.ceil(data.length / itemsPerPage), 1)}
+              Issues: ${itemStart} - ${itemEnd}
             </Box>
             <Box>
-              <Button action="prev-page" disabled="${page === 1}">prev</Button>
+              <Button action="prev-page" disabled="${!paginationLinks.nextLink}">prev</Button>
               <Button action="next-page" disabled="${!paginationLinks.nextLink}">next</Button>
             </Box>
           </Box>

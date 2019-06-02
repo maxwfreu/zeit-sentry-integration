@@ -2,6 +2,12 @@ require('isomorphic-fetch');
 require('url-search-params-polyfill');
 var URL = require('url').URL;
 
+
+const fromEntries = (iterable) => {
+  return [...iterable]
+    .reduce((obj, { 0: key, 1: val }) => Object.assign(obj, { [key]: val }), {})
+}
+
 const fetchRequest = async (url, options = null) => {
   const response = await fetch(url, options);
   const json = await response.json();
@@ -18,18 +24,23 @@ const fetchRequest = async (url, options = null) => {
 
 const request = (method, path = '', params = null, options = null) => {
   const url = new URL(`https://sentry.io/api/0${path}`)
-  console.log("MAKE REQUEST")
-  // let allOptions = {
-  //   cache: 'no-cache',
-  //   ...options
-  // };
+  console.log("MAKE REQUEST", url.href)
+  let allOptions = {
+    cache: 'no-cache',
+    ...options
+  };
   if (method === 'GET') {
-    url.search = new URLSearchParams(params)
-    // console.log(url.href)
-    return fetchRequest(url.href, options)
+    const urlParams = new URLSearchParams(url.search);
+    const pathParams = fromEntries(urlParams.entries());
+    url.search = new URLSearchParams({
+      ...pathParams,
+      ...params
+    })
+
+    return fetchRequest(url.href, allOptions)
   }
 
- const allOptions = {
+ allOptions = {
     method,
     cache: 'no-cache',
     body: JSON.stringify(params),
@@ -38,6 +49,18 @@ const request = (method, path = '', params = null, options = null) => {
 
   return fetchRequest(url.href, allOptions);
 }
+
+module.exports.getDSN = (authToken, organizationSlug, projectSlug) => {
+  const options = {
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${authToken}`
+    },
+  }
+
+  return request('GET', `/projects/${organizationSlug}/${projectSlug}/keys/`, null, options) 
+}
+
 
 const getHeaders = (authToken) => {
   return {
@@ -110,15 +133,14 @@ module.exports.getIssuesFromPaginationLink = async (authToken, link) => {
   const options = getHeaders(authToken);
 
   console.log('link:', link)
-
   const r = await request('GET', link.replace('https://sentry.io/api/0', ''), null, options)
   
 
 
   const paginationLinks = getPaginationLinks(r.response)
 
-  console.log('getIssuesFromPaginationLink:', r.json)  
-  console.log('getIssuesFromPaginationLink paginationLinks:', paginationLinks)
+  // console.log('getIssuesFromPaginationLink:', r.json)  
+  // console.log('getIssuesFromPaginationLink paginationLinks:', paginationLinks)
 
   return {
     issues: r.json,
