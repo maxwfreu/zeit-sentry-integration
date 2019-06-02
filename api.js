@@ -39,7 +39,11 @@ module.exports.getIssues = (authToken, organizationSlug, projectSlug) => {
     },
   }
 
-  return request('GET', `/projects/${organizationSlug}/${projectSlug}/issues/`, null, options)
+  const params = {
+    query: '',
+  }
+
+  return request('GET', `/projects/${organizationSlug}/${projectSlug}/issues/`, params, options)
 }
 
 module.exports.updateIssues = (authToken, organizationSlug, projectSlug, ids, status) => {
