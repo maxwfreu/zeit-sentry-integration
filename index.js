@@ -141,15 +141,15 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
       metadata.linkedApplications[projectId].envAuthToken = clientState.envAuthToken
       await zeitClient.setMetadata(metadata)
       // set env vars
-      // const secretNameApiKey = await zeitClient.ensureSecret(
-      //   'sentry-token',
-      //   metadata.linkedApplications[projectId].envAuthToken
-      // )
-      // await zeitClient.upsertEnv(
-      //   payload.projectId,
-      //   'SENTRY_AUTH_TOKEN',
-      //   secretNameApiKey
-      // )
+      const secretNameApiKey = await zeitClient.ensureSecret(
+        'sentry-auth-token',
+        metadata.linkedApplications[projectId].envAuthToken
+      )
+      await zeitClient.upsertEnv(
+        payload.projectId,
+        'SENTRY_AUTH_TOKEN',
+        secretNameApiKey
+      )
 
       metadata.linkedApplications[projectId].organizationSlug = clientState.organizationSlug
       await zeitClient.setMetadata(metadata)
@@ -164,11 +164,14 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
         clientState.projectSlug,
       );
       const dsn = `https://${dsnRes[0].id}@sentry.io/${dsnRes[0].projectId}`;
-
+      const secreteDSN = await zeitClient.ensureSecret(
+        'sentry-dsn',
+        dsn
+      )
       await zeitClient.upsertEnv(
         payload.projectId,
         'SENTRY_DSN',
-        dsn
+        secreteDSN
       )
 
       await refreshIssues(clientState, metadata, projectId, zeitClient)
