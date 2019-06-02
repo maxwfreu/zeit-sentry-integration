@@ -15,31 +15,38 @@ const fetchRequest = async (url, options = null) => {
 
 const request = (method, path = '', params = null, options = null) => {
   const url = new URL(`https://sentry.io/api/0${path}`)
-
+  console.log("MAKE REQUEST")
+  // let allOptions = {
+  //   cache: 'no-cache',
+  //   ...options
+  // };
   if (method === 'GET') {
     url.search = new URLSearchParams(params)
+    console.log(url.href)
     return fetchRequest(url.href, options)
   }
 
-  const allOptions = {
+ const allOptions = {
     method,
-    body: JSON.stringify(params),
     cache: 'no-cache',
+    body: JSON.stringify(params),
     ...options
   };
 
   return fetchRequest(url.href, allOptions);
 }
 
-module.exports.getIssues = (authToken, organizationSlug, projectSlug, status='unresolved') => {
+module.exports.getIssues = (authToken, organizationSlug, projectSlug, status='unresolved', sort='freq') => {
   const options = {
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${authToken}`
     },
   }
+
   const params = {
     query: status === 'all' ? '' : `is:${status}`,
+    sort,
   }
 
   return request('GET', `/projects/${organizationSlug}/${projectSlug}/issues/`, params, options)
