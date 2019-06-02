@@ -47,7 +47,6 @@ module.exports = (props) => {
               </Select>
             </Box>
             <Box display="flex" flexDirection="row" alignItems="center">
-              <Box marginRight="8px">Seach All Issues:</Box>
               <Box marginRight="16px" display="flex" alignItems="center">
                 <Input name="issueFilter" value="${clientState.issueFilter || ''}" />
               </Box>
