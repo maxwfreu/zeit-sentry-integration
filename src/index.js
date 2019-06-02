@@ -256,17 +256,6 @@ module.exports = withUiHook(async ({ payload, zeitClient }) => {
           'SENTRY_ORGANIZATION_SLUG',
           secreteSentryOrgSlug
         )
-
-        // const data = {
-        //   name: payload.project.name,
-        //   version: 2,
-        // };
-        // const t = await zeitClient.fetch('/v9/now/deployments?forceNew=1', {
-        //   method: 'POST',
-        //   data
-        // });
-
-        // const {deployments} = await zeitClient.fetchAndThrow(apiUrl, {method: 'GET'});
       } catch (err) {
         showSettings = true;
         throwDisplayableError({ message: `Error connecting to Sentry. Please double check credentials. Error: ${err.message}` })
