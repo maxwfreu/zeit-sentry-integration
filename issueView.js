@@ -83,7 +83,7 @@ module.exports = (props) => {
           </Box>
           ${data.map((item, index) => {
             const assignedToId = `${item.id}:AssignTo`;
-            const action = `${item.id}:AssignTo`;
+            const assignedAction = `${item.id}:AssignTo`;
             let assignedToValue = '';
             if (item.assignedTo) {
               assignedToValue = item.assignedTo.id;
@@ -145,7 +145,7 @@ module.exports = (props) => {
                       </Box>
 
                       <Box display="flex" justifyContent="center" alignItems="center">
-                        <Select name="${assignedToId}" value="${assignedToValue}" action="${action}">
+                        <Select name="${assignedToId}" value="${assignedToValue}" action="${assignedAction}">
                           <Option value="noone" caption="No One" />
                           ${members.map((member, index) => {
                             return htm`
