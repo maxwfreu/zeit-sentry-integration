@@ -13,7 +13,7 @@
     "@sentry/browser": "^5.4.0",
     "@zeit/integration-utils": "latest",
     "isomorphic-fetch": "^2.2.1",
-    "moment": "^2.24.0",
+    "moment": "^2.29.4",
     "request": "2.88.0",
     "request-promise": "4.2.4",
     "url-polyfill": "^1.1.5",
